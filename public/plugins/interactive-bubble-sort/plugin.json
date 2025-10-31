@@ -1,0 +1,9 @@
+{
+  "name": "Interactive-Bubble-Sort",
+  "version": "1.0.0",
+  "type": "interactive-component",
+  "entryPoint": "main.js",
+  "style": "style.css",
+  "author": "王老师",
+  "description": "一个允许用户输入数组并观察冒泡排序过程的交互式动画。"
+}
