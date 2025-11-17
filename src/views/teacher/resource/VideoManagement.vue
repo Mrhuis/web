@@ -28,7 +28,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import TeacherLayout from './TeacherLayout.vue';
+import TeacherLayout from '../layout/TeacherLayout.vue';
 
 const mediaList = ref([
   { name: '队列动画', type: 'anim', knowledge: '' },

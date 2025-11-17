@@ -32,7 +32,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import TeacherLayout from './TeacherLayout.vue';
+import TeacherLayout from '../layout/TeacherLayout.vue';
 
 const qaList = ref([
   { title: '队列的出队复杂度？', student: '学生A', status: 'open' },

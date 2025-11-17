@@ -42,7 +42,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import TeacherLayout from './TeacherLayout.vue';
+import TeacherLayout from '../layout/TeacherLayout.vue';
 
 const typeFilter = ref('all');
 const items = ref([

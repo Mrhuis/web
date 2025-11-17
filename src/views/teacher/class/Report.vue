@@ -20,7 +20,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
 import * as echarts from 'echarts';
-import TeacherLayout from './TeacherLayout.vue';
+import TeacherLayout from '../layout/TeacherLayout.vue';
 
 const warningList = ref([
   { class: 'A班', warning: 2 },

@@ -52,7 +52,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import TeacherLayout from './TeacherLayout.vue';
+import TeacherLayout from '../layout/TeacherLayout.vue';
 
 const activeTab = ref('class');
 const newClassName = ref('');

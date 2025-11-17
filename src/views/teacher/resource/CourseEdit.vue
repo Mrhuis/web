@@ -79,7 +79,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import TeacherLayout from '@/views/teacher/TeacherLayout.vue';
+import TeacherLayout from '../layout/TeacherLayout.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { UploadFilled } from '@element-plus/icons-vue';
 import { uploadResourceZip } from '@/api/teacher_course_edit_api';

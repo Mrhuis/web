@@ -22,13 +22,12 @@ const routes = [
   { path: '/student/qa', component: () => import('./views/student/qa.vue') },
 
   // Teacher routes
-  { path: '/teacher', redirect: '/teacher/course-edit' },
-  { path: '/teacher/class-mgr', component: () => import('./views/teacher/class-mgr.vue') },
-  { path: '/teacher/course-edit', component: () => import('./views/teacher/course-edit.vue') },
-  { path: '/teacher/item-mgr', component: () => import('./views/teacher/item-mgr.vue') },
-  { path: '/teacher/qa-mgr', component: () => import('./views/teacher/qa-mgr.vue') },
-  { path: '/teacher/report', component: () => import('./views/teacher/report.vue') },
-  { path: '/teacher/video-mgr', component: () => import('./views/teacher/video-mgr.vue') },
+  { path: '/teacher', redirect: '/teacher/test-manage' },
+  { path: '/teacher/test-manage', component: () => import('./views/teacher/test/index.vue') },
+  { path: '/teacher/resource-manage', component: () => import('./views/teacher/resource/index.vue') },
+  { path: '/teacher/message-center', component: () => import('./views/teacher/message/index.vue') },
+  { path: '/teacher/class-mgr', component: () => import('./views/teacher/class/index.vue') },
+  { path: '/teacher/profile', component: () => import('./views/teacher/profile/index.vue') },
 ]
 
 const router = createRouter({

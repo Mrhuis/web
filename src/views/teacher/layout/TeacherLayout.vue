@@ -22,12 +22,11 @@ const logout = () => {
   <div class="main-layout">
     <div class="side-menu">
       <el-menu :default-active="route.path" router>
-        <el-menu-item index="/teacher/course-edit">课程管理</el-menu-item>
-        <el-menu-item index="/teacher/item-mgr">题库管理</el-menu-item>
-        <el-menu-item index="/teacher/video-mgr">视频/动画库</el-menu-item>
-        <el-menu-item index="/teacher/class-mgr">班级与学员</el-menu-item>
-        <el-menu-item index="/teacher/report">学情报告</el-menu-item>
-        <el-menu-item index="/teacher/qa-mgr">答疑中心</el-menu-item>
+        <el-menu-item index="/teacher/test-manage">测验管理</el-menu-item>
+        <el-menu-item index="/teacher/resource-manage">资源管理</el-menu-item>
+        <el-menu-item index="/teacher/message-center">消息中心</el-menu-item>
+        <el-menu-item index="/teacher/class-mgr">班级管理</el-menu-item>
+        <el-menu-item index="/teacher/profile">个人信息管理</el-menu-item>
       </el-menu>
     </div>
     <div class="content">
@@ -38,7 +37,26 @@ const logout = () => {
 
 
 <style scoped>
-.main-layout { display: flex; min-height: 100vh; }
-.side-menu { width: 200px; background: #f5f7fa; }
-.content { flex: 1; padding: 24px; }
+.main-layout { 
+  display: flex !important; 
+  min-height: 100vh; 
+}
+.side-menu { 
+  width: 200px !important;
+  min-width: 200px !important;
+  max-width: 200px !important;
+  background: #f5f7fa; 
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+.content { 
+  flex: 1 !important; 
+  padding: 24px; 
+  min-width: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
 </style>

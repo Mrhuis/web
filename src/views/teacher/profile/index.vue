@@ -1,0 +1,45 @@
+<template>
+  <TeacherLayout>
+    <div class="profile-container">
+      <div class="page-header">
+        <h1 class="page-title">个人信息管理</h1>
+      </div>
+      <div class="content">
+        <el-empty description="个人信息管理功能开发中..." />
+      </div>
+    </div>
+  </TeacherLayout>
+</template>
+
+<script setup>
+import TeacherLayout from '../layout/TeacherLayout.vue';
+</script>
+
+<style scoped>
+.profile-container {
+  width: 100%;
+}
+
+.page-header {
+  margin-bottom: 24px;
+  padding: 0 4px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
+
