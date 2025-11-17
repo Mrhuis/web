@@ -9,11 +9,10 @@
   <div class="main-layout">
     <div class="side-menu">
       <el-menu :default-active="route.path" router>
-        <el-menu-item index="/admin/dashboard">系统总览</el-menu-item>
         <el-menu-item index="/admin/resource-manage">资源管理</el-menu-item>
         <el-menu-item index="/admin/user-mgr">用户管理</el-menu-item>
-        <el-menu-item index="/admin/sys-config">系统配置</el-menu-item>
-        <el-menu-item index="/admin/monitor">监控中心</el-menu-item>
+        <el-menu-item index="/admin/sys-config">系统管理</el-menu-item>
+        <el-menu-item index="/admin/message-center">消息中心</el-menu-item>
       </el-menu>
     </div>
     <div class="content">

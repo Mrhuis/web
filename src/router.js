@@ -6,12 +6,11 @@ const routes = [
   { path: '/register', component: () => import('./views/Register.vue') },
 
   // Admin routes
-  { path: '/admin', redirect: '/admin/dashboard' },
-  { path: '/admin/dashboard', component: () => import('./views/admin/dashboard.vue') },
-  { path: '/admin/monitor', component: () => import('./views/admin/monitor.vue') },
+  { path: '/admin', redirect: '/admin/resource-manage' },
   { path: '/admin/resource-manage', component: () => import('./views/admin/resource-manage.vue') },
+  { path: '/admin/user-mgr', component: () => import('./views/admin/user_manage/index.vue') },
   { path: '/admin/sys-config', component: () => import('./views/admin/sys-config.vue') },
-  { path: '/admin/user-mgr', component: () => import('./views/admin/user-mgr.vue') },
+  { path: '/admin/message-center', component: () => import('./views/admin/message-center.vue') },
 
   // Student routes
   { path: '/student', redirect: '/student/learning-center' },
