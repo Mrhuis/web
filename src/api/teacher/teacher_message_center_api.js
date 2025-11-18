@@ -3,7 +3,7 @@ import request from '@/utils/request';
 /**
  * 获取当前教师相关的消息列表
  * @param {Object} params
- * @param {number} params.userId - 当前教师的用户ID
+ * @param {string} params.userKey - 当前教师的用户Key
  * @param {number} [params.page_index=1]
  * @param {number} [params.page_size=200]
  * @returns {Promise<Result<QueryListVo<Message>>>}
@@ -20,8 +20,8 @@ export function getTeacherMessageList(params) {
  * 发送消息
  * @param {Object} payload
  * @param {number|null} payload.convId
- * @param {number} payload.senderId
- * @param {number} payload.receiverId
+ * @param {string} payload.senderKey
+ * @param {string} payload.receiverKey
  * @param {string} payload.content
  * @param {string|null} payload.attachUrl
  * @param {number} payload.msgType
@@ -38,7 +38,7 @@ export function sendTeacherMessage(payload) {
 
 /**
  * 撤回消息
- * @param {{ id: number, userId: number }} payload
+ * @param {{ id: number, userKey: string }} payload
  */
 export function revokeTeacherMessage(payload) {
   return request({
@@ -50,7 +50,7 @@ export function revokeTeacherMessage(payload) {
 
 /**
  * 删除消息
- * @param {{ id: number, userId: number }} payload
+ * @param {{ id: number, userKey: string }} payload
  */
 export function deleteTeacherMessage(payload) {
   return request({

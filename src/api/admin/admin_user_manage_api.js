@@ -43,4 +43,20 @@ export function getUserDetail(id) {
   });
 }
 
+// 获取简化版用户列表
+export function getAdminSimpleUserList() {
+  return request({
+    url: '/admin/user/simple-list',
+    method: 'get'
+  });
+}
+
+// 通过userKey获取用户基本信息（用户名和昵称）
+export function getUserBasicInfo(userKey) {
+  return request({
+    url: '/admin/user/basic-info',
+    method: 'get',
+    params: { userKey }
+  });
+}
 
