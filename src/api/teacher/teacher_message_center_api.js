@@ -60,3 +60,15 @@ export function deleteTeacherMessage(payload) {
   });
 }
 
+/**
+ * 标记会话消息为已读
+ * @param {{ convId: number, userKey: string }} payload
+ */
+export function markTeacherMessagesAsRead(payload) {
+  return request({
+    url: '/teacher/message/mark-as-read',
+    method: 'post',
+    data: payload
+  });
+}
+

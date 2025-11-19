@@ -27,10 +27,9 @@ const logout = () => {
     <div class="side-menu">
       <el-menu :default-active="route.path" router>
         <el-menu-item index="/student/learning-center">学习中心</el-menu-item>
-        <el-menu-item index="/student/practice">练习考场</el-menu-item>
-        <el-menu-item index="/student/algorithm-visualization">算法可视化</el-menu-item>
-        <el-menu-item index="/student/insight">个人洞察</el-menu-item>
-        <el-menu-item index="/student/qa">问答社区</el-menu-item>
+        <el-menu-item index="/student/practice">测验中心</el-menu-item>
+        <el-menu-item index="/student/message">消息中心</el-menu-item>
+        <el-menu-item index="/student/profile">个人信息管理</el-menu-item>
       </el-menu>
     </div>
     <div class="content">

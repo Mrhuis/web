@@ -10,15 +10,14 @@ const routes = [
   { path: '/admin/resource-manage', component: () => import('./views/admin/resource-manage.vue') },
   { path: '/admin/user-mgr', component: () => import('./views/admin/user_manage/index.vue') },
   { path: '/admin/sys-config', component: () => import('./views/admin/sys-config.vue') },
-  { path: '/admin/message-center', component: () => import('./views/admin/message-center.vue') },
+  { path: '/admin/message-center', component: () => import('./views/admin/message/index.vue') },
 
   // Student routes
   { path: '/student', redirect: '/student/learning-center' },
-  { path: '/student/algorithm-visualization', component: () => import('./views/student/AlgorithmVisualization.vue') },
-  { path: '/student/insight', component: () => import('./views/student/insight.vue') },
   { path: '/student/learning-center', component: () => import('./views/student/LearningCenter.vue') },
   { path: '/student/practice', component: () => import('./views/student/practice.vue') },
-  { path: '/student/qa', component: () => import('./views/student/qa.vue') },
+  { path: '/student/message', component: () => import('./views/student/message/index.vue') },
+  { path: '/student/profile', component: () => import('./views/student/profile/index.vue') },
 
   // Teacher routes
   { path: '/teacher', redirect: '/teacher/test-manage' },

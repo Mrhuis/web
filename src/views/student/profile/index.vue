@@ -1,10 +1,10 @@
 <template>
-  <TeacherLayout>
+  <StudentLayout>
     <div class="profile-container">
       <div class="page-header">
         <div>
           <h1 class="page-title">个人信息管理</h1>
-          <p class="page-subtitle">查看与更新您的教师账号资料</p>
+          <p class="page-subtitle">查看与更新您的学生账号资料</p>
         </div>
         <div class="header-actions">
           <el-button :loading="loading" :icon="RefreshRight" @click="fetchProfile">
@@ -92,7 +92,7 @@
         </el-card>
       </div>
     </div>
-  </TeacherLayout>
+  </StudentLayout>
 </template>
 
 <script setup>
@@ -100,7 +100,7 @@ import { onMounted, reactive, ref } from 'vue';
 import dayjs from 'dayjs';
 import { ElMessage } from 'element-plus';
 import { RefreshRight } from '@element-plus/icons-vue';
-import TeacherLayout from '../layout/TeacherLayout.vue';
+import StudentLayout from '../StudentLayout.vue';
 import { useUserStore } from '@/store/user';
 import { getTeacherProfile, updateTeacherProfile } from '@/api/teacher/teacher_profile_api';
 

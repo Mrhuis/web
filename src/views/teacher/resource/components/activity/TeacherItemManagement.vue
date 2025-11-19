@@ -233,13 +233,22 @@
           {{ getStatusText(detailRecord.status) }}
         </el-descriptions-item>
         <el-descriptions-item label="题干" :span="2">
-          {{ detailRecord.content || '-' }}
+          <template v-if="detailRecord.content">
+            <div class="rich-text-content" v-html="detailContentHtml"></div>
+          </template>
+          <span v-else>-</span>
         </el-descriptions-item>
         <el-descriptions-item label="答案" :span="2">
-          {{ detailRecord.answer || '-' }}
+          <template v-if="detailRecord.answer">
+            <div class="rich-text-content" v-html="detailAnswerHtml"></div>
+          </template>
+          <span v-else>-</span>
         </el-descriptions-item>
         <el-descriptions-item label="解析" :span="2">
-          {{ detailRecord.analysis || detailRecord.solution || '-' }}
+          <template v-if="detailRecord.analysis || detailRecord.solution">
+            <div class="rich-text-content" v-html="detailSolutionHtml"></div>
+          </template>
+          <span v-else>-</span>
         </el-descriptions-item>
         <el-descriptions-item label="章节关联" :span="2">
           <template v-if="getChapterNames(detailRecord)">
@@ -275,9 +284,11 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
+import { marked } from 'marked';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
 import RichTextEditor from './item_components/RichTextEditor.vue';
+import { processImagePaths, convertToRelativePaths } from '@/utils/imageUtils';
 import {
   getTeacherItemList,
   createTeacherItem,
@@ -325,6 +336,86 @@ const optionLoading = ref({
 });
 
 const detailRecord = ref(null);
+const markdownPatterns = [
+  /^#{1,6}\s+/m,
+  /\*\*([^*]+)\*\*/g,
+  /\*([^*]+)\*/g,
+  /`([^`]+)`/g,
+  /```[\s\S]*?```/g,
+  /^\s*[-*+]\s+/m,
+  /^\s*\d+\.\s+/m,
+  /\[([^\]]+)\]\(([^)]+)\)/g,
+  /!\[([^\]]*)\]\(([^)]+)\)/g,
+  /^\s*>\s+/m,
+  /^\s*\|.*\|.*\|/m,
+  /^---+$/m,
+  /~~([^~]+)~~/g
+];
+
+const isMarkdownFormat = (content) => {
+  if (!content) return false;
+  return markdownPatterns.some((pattern) => pattern.test(content));
+};
+
+const processRichContent = (content) => {
+  if (!content) return '';
+  const processed = processImagePaths(content);
+  if (isMarkdownFormat(content)) {
+    return marked.parse(processed);
+  }
+  return processed;
+};
+
+const detailContentHtml = computed(() => processRichContent(detailRecord.value?.content || ''));
+const detailAnswerHtml = computed(() => processRichContent(detailRecord.value?.answer || ''));
+const detailSolutionHtml = computed(() =>
+  processRichContent(detailRecord.value?.analysis || detailRecord.value?.solution || '')
+);
+
+const containsHtmlTag = (content) => /<[^>]+>/.test(content || '');
+
+const convertHtmlToMarkdown = (htmlContent) => {
+  if (!htmlContent) return '';
+  let processed = htmlContent;
+
+  processed = processed.replace(
+    /<img[^>]*alt="([^"]*)"[^>]*src="([^"]+)"[^>]*>/gi,
+    (match, alt, src) => `![${alt || '图片'}](${src})`
+  );
+
+  processed = processed.replace(
+    /<img[^>]*src="([^"]+)"[^>]*alt="([^"]*)"[^>]*>/gi,
+    (match, src, alt) => `![${alt || '图片'}](${src})`
+  );
+
+  processed = processed.replace(
+    /<img[^>]*src="([^"]+)"[^>]*>/gi,
+    (match, src) => `![图片](${src})`
+  );
+
+  processed = processed
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<div[^>]*>/gi, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+
+  return processed;
+};
+
+const processContentForSubmit = (content) => {
+  if (!content) return '';
+  let processed = content;
+  if (containsHtmlTag(content)) {
+    processed = convertHtmlToMarkdown(processed);
+  }
+  processed = convertToRelativePaths(processed);
+  return processed;
+};
 
 const currentUserKey = computed(() => {
   return (
@@ -488,9 +579,9 @@ const submitForm = () => {
         itemKey: form.value.itemKey,
         formKey: form.value.formKey,
         difficulty: form.value.difficulty || 1,
-        content: form.value.content,
-        answer: form.value.answer,
-        solution: form.value.analysis || '', // 前端用analysis，后端用solution
+        content: processContentForSubmit(form.value.content),
+        answer: processContentForSubmit(form.value.answer),
+        solution: processContentForSubmit(form.value.analysis || ''), // 前端用analysis，后端用solution
         chapterKey: form.value.chapterKey || [],
         knowledgeKey: form.value.knowledgeKey || [],
         tagId: (form.value.tagId || []).map(id => typeof id === 'string' ? parseInt(id) : id),
@@ -664,6 +755,17 @@ onMounted(() => {
 
 .full-width {
   width: 100%;
+}
+
+.rich-text-content {
+  line-height: 1.6;
+}
+
+.rich-text-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 8px 0;
 }
 </style>
 

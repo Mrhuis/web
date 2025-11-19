@@ -1,5 +1,5 @@
 <template>
-  <TeacherLayout>
+  <AdminLayout>
     <div class="message-center-container">
       <div class="page-header">
         <div>
@@ -274,7 +274,7 @@
         </div>
       </div>
     </div>
-  </TeacherLayout>
+  </AdminLayout>
 </template>
 
 <script setup>
@@ -282,7 +282,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from
 import dayjs from 'dayjs';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh, Search, Picture, Close } from '@element-plus/icons-vue';
-import TeacherLayout from '../layout/TeacherLayout.vue';
+import AdminLayout from '@/views/admin/AdminLayout.vue';
 import { useUserStore } from '@/store/user';
 import {
   getTeacherMessageList,
@@ -295,22 +295,6 @@ import { uploadMessageImage } from '@/api/admin/admin_message_center_api';
 import { convertImagePaths } from '@/utils/imageUtils';
 
 const userStore = useUserStore();
-
-const enableConvIdDebugLog =
-  (typeof window !== 'undefined' && window.__ENABLE_TEACHER_MESSAGE_DEBUG__ === true) ||
-  import.meta.env.MODE !== 'production';
-
-const logConvIdDebug = (label, payload = {}) => {
-  if (!enableConvIdDebugLog) return;
-  const timestamp = new Date().toISOString();
-  if (typeof console.groupCollapsed === 'function') {
-    console.groupCollapsed(`[TeacherMessageConvId][${timestamp}] ${label}`);
-    console.log(payload);
-    console.groupEnd();
-  } else {
-    console.info(`[TeacherMessageConvId][${timestamp}] ${label}`, payload);
-  }
-};
 
 const loadingMessages = ref(false);
 const sending = ref(false);
@@ -452,7 +436,7 @@ const filteredMessages = computed(() => {
 
 const activeConvId = computed(() => {
   const existing = filteredMessages.value.find((msg) => msg.convId);
-  return existing?.convId ? String(existing.convId) : null;
+  return existing?.convId ?? null;
 });
 
 const scrollToBottom = () => {
@@ -493,42 +477,21 @@ const normalizeConvId = (value) => {
 };
 
 const getConvIdForApi = (value) => {
-  if (!value && value !== 0) {
-    logConvIdDebug('getConvIdForApi: skip empty value', { value });
-    return null;
-  }
-
+  if (!value && value !== 0) return null;
   const normalized = normalizeConvId(value);
-  if (!normalized) {
-    logConvIdDebug('getConvIdForApi: normalization failed', { value });
-    return null;
-  }
-
+  if (!normalized) return null;
   if (convIdRawMap.value.has(normalized)) {
-    const rawValue = convIdRawMap.value.get(normalized);
-    const rawAsString =
-      rawValue === null || rawValue === undefined ? null : String(rawValue);
-    logConvIdDebug('getConvIdForApi: use raw map value', {
-      normalized,
-      rawValue,
-      rawValueType: typeof rawValue,
-      rawAsString,
-      hasPrecisionRisk:
-        typeof rawValue === 'number' && rawValue.toString() !== normalized
-    });
-    return rawAsString;
+    return convIdRawMap.value.get(normalized);
   }
-
-  logConvIdDebug('getConvIdForApi: fallback to normalized string', { normalized });
   return normalized;
 };
 
 const hasUnreadMessages = (convId) => {
   if (!convId || !currentUserKey.value) return false;
-  const normalized = normalizeConvId(convId);
+  const normalizedConvId = normalizeConvId(convId);
   return messages.value.some(
     (msg) =>
-      normalizeConvId(msg.convId) === normalized &&
+      msg.convId === normalizedConvId &&
       msg.receiverKey === currentUserKey.value &&
       msg.isRead === 0
   );
@@ -539,34 +502,23 @@ const markConversationAsRead = async (convId) => {
   if (!currentUserKey.value) return;
   if (!hasUnreadMessages(convId)) return;
 
-  const normalizedConvId = normalizeConvId(convId);
   const convIdForApi = getConvIdForApi(convId);
   if (convIdForApi === null || convIdForApi === undefined) {
     console.warn('无法解析 convId，跳过已读标记', convId);
-    logConvIdDebug('markConversationAsRead: skip due to invalid convIdForApi', {
-      convId,
-      normalizedConvId,
-      convIdForApi
-    });
     return;
   }
 
   try {
     markingRead.value = true;
-    logConvIdDebug('markConversationAsRead: sending request', {
-      convId,
-      normalizedConvId,
-      convIdForApi,
-      receiverKey: currentUserKey.value
-    });
     const response = await markTeacherMessagesAsRead({
       convId: convIdForApi,
       userKey: currentUserKey.value
     });
     if (response.success) {
+      const normalizedConvId = normalizeConvId(convId);
       messages.value = messages.value.map((msg) => {
         if (
-          normalizeConvId(msg.convId) === normalizeConvId(convId) &&
+          msg.convId === normalizedConvId &&
           msg.receiverKey === currentUserKey.value &&
           msg.isRead === 0
         ) {
@@ -662,25 +614,17 @@ const fetchMessages = async (options = { silent: false }) => {
     if (response.success) {
       const nextConvIdMap = new Map();
       messages.value = (response.data?.records || []).map((item) => {
-        const normalized =
+        const normalizedConvId =
           item.convId === undefined || item.convId === null ? null : String(item.convId);
-
-        if (normalized) {
-          nextConvIdMap.set(normalized, item.convId);
+        if (normalizedConvId) {
+          nextConvIdMap.set(normalizedConvId, item.convId);
         }
-
         return {
           ...item,
-          convId: normalized
+          convId: normalizedConvId
         };
       });
       convIdRawMap.value = nextConvIdMap;
-      logConvIdDebug('fetchMessages: refreshed convId map', {
-        totalMessages: messages.value.length,
-        convIdSamples: Array.from(nextConvIdMap.entries())
-          .slice(0, 5)
-          .map(([key, raw]) => ({ normalized: key, raw, rawType: typeof raw }))
-      });
       
       // 获取消息中涉及的所有用户信息
       const userKeys = new Set();
@@ -1430,3 +1374,4 @@ watch(
   }
 }
 </style>
+

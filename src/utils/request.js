@@ -1,11 +1,31 @@
 import axios from 'axios';
+import JSONBig from 'json-bigint';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useUserStore } from '@/store/user';
+
+const jsonBig = JSONBig({
+  storeAsString: true,
+  strict: true
+});
 
 // 创建 axios 实例
 const service = axios.create({
   baseURL: '/api', // api 的 base_url
   timeout: 5000, // 请求超时时间
+  transformResponse: [
+    (data) => {
+      if (!data) {
+        return data;
+      }
+      try {
+        // axios 默认会把 data 解析为字符串，这里用 json-bigint 解析以避免大整数精度丢失
+        return jsonBig.parse(data);
+      } catch (error) {
+        // 如果不是标准 JSON，则直接返回原始数据
+        return data;
+      }
+    }
+  ]
 });
 
 // request 拦截器
