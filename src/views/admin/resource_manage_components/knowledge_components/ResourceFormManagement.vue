@@ -9,9 +9,8 @@
           style="width: 200px; margin-right: 16px;" 
         />
         <el-select v-model="resourceFormTypeSearch" placeholder="资源类型" clearable style="width: 120px; margin-right: 16px;">
-          <el-option label="视频" value="video"></el-option>
+          <el-option label="媒体" value="media"></el-option>
           <el-option label="习题" value="item"></el-option>
-          <el-option label="动画" value="animation"></el-option>
         </el-select>
         <el-select v-model="resourceFormStatusSearch" placeholder="状态" clearable style="width: 120px; margin-right: 16px;">
           <el-option label="待审核" value="PENDING"></el-option>
@@ -150,9 +149,8 @@
         </el-form-item>
         <el-form-item label="资源类型" prop="formType">
           <el-select v-model="resourceFormForm.formType" placeholder="选择资源类型" style="width: 100%">
-            <el-option label="视频" value="video"></el-option>
+            <el-option label="媒体" value="media"></el-option>
             <el-option label="习题" value="item"></el-option>
-            <el-option label="动画" value="animation"></el-option>
           </el-select>
         </el-form-item>
         <!-- 编辑时才显示状态选项 -->
@@ -574,9 +572,8 @@ const handleCurrentChange = (val) => {
 // 获取资源类型颜色
 const getFormTypeColor = (formType) => {
   const colorMap = {
-    'video': 'primary',
-    'item': 'success',
-    'animation': 'warning'
+    'media': 'primary',
+    'item': 'success'
   };
   return colorMap[formType] || 'default';
 };
@@ -584,9 +581,8 @@ const getFormTypeColor = (formType) => {
 // 获取资源类型文本
 const getFormTypeText = (formType) => {
   const textMap = {
-    'video': '视频',
-    'item': '习题',
-    'animation': '动画'
+    'media': '媒体',
+    'item': '习题'
   };
   return textMap[formType] || formType;
 };

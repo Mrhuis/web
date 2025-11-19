@@ -1,78 +1,135 @@
 <template>
   <TeacherLayout>
-    <el-tabs v-model="activeTab">
-      <el-tab-pane label="班级管理" name="class">
-        <el-form inline>
-          <el-form-item label="班级名称">
-            <el-input v-model="newClassName"></el-input>
-          </el-form-item>
-          <el-button type="primary" @click="addClass">创建班级</el-button>
-        </el-form>
-        <el-table :data="classList" style="width:100%;margin-top:16px;">
-          <el-table-column prop="name" label="班级" width="180" />
-          <el-table-column prop="invite" label="邀请码" width="120" />
-          <el-table-column label="操作" width="120">
-            <template #default="scope">
-              <el-button size="small" type="danger" @click="removeClass(scope.$index)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-      <el-tab-pane label="班级学生" name="student">
-        <el-table :data="studentList" style="width:100%;">
-          <el-table-column prop="name" label="学生" width="180" />
-          <el-table-column prop="class" label="班级" width="120" />
-          <el-table-column label="操作" width="120">
-            <template #default="scope">
-              <el-button size="small" type="danger" @click="kickStudent(scope.$index)">踢出</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-      <el-tab-pane label="自由学习者" name="free">
-        <el-table :data="freeList" style="width:100%;">
-          <el-table-column prop="name" label="学生" width="180" />
-          <el-table-column prop="reason" label="申请理由" width="200" />
-          <el-table-column prop="remark" label="备注" width="120">
-            <template #default="scope">
-              <el-input v-model="scope.row.remark" size="small"></el-input>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="180">
-            <template #default="scope">
-              <el-button size="small" type="success" @click="approve(scope.$index)">同意</el-button>
-              <el-button size="small" type="danger" @click="reject(scope.$index)">拒绝</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-    </el-tabs>
+    <div class="class-manage-container">
+      <div class="page-header">
+        <h1 class="page-title">班级管理</h1>
+      </div>
+      
+      <!-- 主内容区域 -->
+      <div class="content-wrapper">
+        <!-- 侧边栏导航 -->
+        <div class="sidebar">
+          <div 
+            v-for="item in menuItems" 
+            :key="item.key"
+            class="menu-item"
+            :class="{ active: activeTab === item.key }"
+            @click="activeTab = item.key"
+          >
+            <el-icon class="menu-icon">
+              <component :is="item.icon" />
+            </el-icon>
+            <span class="menu-text">{{ item.label }}</span>
+          </div>
+        </div>
+        
+        <!-- 主内容区域 -->
+        <div class="main-content">
+          <ClassManagement v-if="activeTab === 'class'" />
+          <ClassStudentManagement v-if="activeTab === 'student'" />
+        </div>
+      </div>
+    </div>
   </TeacherLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import { School, User } from '@element-plus/icons-vue';
 import TeacherLayout from '../layout/TeacherLayout.vue';
+import ClassManagement from './ClassManagement.vue';
+import ClassStudentManagement from './ClassStudentManagement.vue';
 
 const activeTab = ref('class');
-const newClassName = ref('');
-const classList = ref([
-  { name: 'A班', invite: 'INV123' },
-  { name: 'B班', invite: 'INV456' }
-]);
-function addClass() {
-  classList.value.push({ name: newClassName.value, invite: 'INV' + Math.floor(Math.random()*1000) });
-  newClassName.value = '';
-}
-function removeClass(idx) { classList.value.splice(idx,1); }
-const studentList = ref([
-  { name: '学生A', class: 'A班' },
-  { name: '学生B', class: 'B班' }
-]);
-function kickStudent(idx) { studentList.value.splice(idx,1); }
-const freeList = ref([
-  { name: '学生C', reason: '想旁听', remark: '' }
-]);
-function approve(idx) { freeList.value.splice(idx,1); }
-function reject(idx) { freeList.value.splice(idx,1); }
+
+const menuItems = [
+  { key: 'class', label: '班级管理', icon: 'School' },
+  { key: 'student', label: '班级学生管理', icon: 'User' }
+];
 </script>
+
+<style scoped>
+.class-manage-container {
+  width: 100%;
+}
+
+.page-header {
+  margin-bottom: 24px;
+  padding: 0 4px;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.content-wrapper {
+  display: flex !important;
+  gap: 24px !important;
+  min-height: 600px;
+  align-items: flex-start !important;
+}
+
+/* 提高子侧边栏样式优先级，防止被el-tabs等组件影响 */
+.content-wrapper .sidebar {
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  background: #f8fafc !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.content-wrapper .menu-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  margin-bottom: 4px !important;
+}
+
+.content-wrapper .menu-item:hover {
+  background: #e2e8f0 !important;
+}
+
+.content-wrapper .menu-item.active {
+  background: #3b82f6 !important;
+  color: white !important;
+}
+
+.content-wrapper .menu-item.active .menu-icon {
+  color: white !important;
+}
+
+.content-wrapper .menu-icon {
+  font-size: 18px !important;
+  color: #64748b !important;
+}
+
+.content-wrapper .menu-text {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.main-content {
+  flex: 1 !important;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+</style>

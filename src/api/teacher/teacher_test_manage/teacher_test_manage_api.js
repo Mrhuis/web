@@ -159,6 +159,82 @@ export function getExamPaperQuestionDetail(id) {
 }
 
 /**
+ * 获取试卷下发（发布）列表
+ * @param {Object} queryParams
+ * @returns {Promise}
+ */
+export function getExamPaperDistributionList(queryParams = {}) {
+  return request({
+    url: '/teacher/test/distribution/list',
+    method: 'post',
+    data: queryParams
+  });
+}
+
+/**
+ * 添加试卷下发（发布）
+ * @param {Object} payload
+ * @returns {Promise}
+ */
+export function addExamPaperDistribution(payload) {
+  return request({
+    url: '/teacher/test/distribution/add',
+    method: 'post',
+    data: payload
+  });
+}
+
+/**
+ * 更新试卷下发（发布）
+ * @param {Object} payload
+ * @returns {Promise}
+ */
+export function updateExamPaperDistribution(payload) {
+  return request({
+    url: '/teacher/test/distribution/update',
+    method: 'post',
+    data: payload
+  });
+}
+
+/**
+ * 删除试卷下发记录
+ * @param {number|string} id
+ * @returns {Promise}
+ */
+export function deleteExamPaperDistribution(id) {
+  return request({
+    url: `/teacher/test/distribution/delete/${id}`,
+    method: 'post'
+  });
+}
+
+/**
+ * 获取试卷下发详情
+ * @param {number|string} id
+ * @returns {Promise}
+ */
+export function getExamPaperDistributionDetail(id) {
+  return request({
+    url: `/teacher/test/distribution/detail/${id}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 回收试卷下发
+ * @param {Object} payload
+ * @returns {Promise}
+ */
+export function recycleExamPaperDistribution(payload) {
+  return request({
+    url: '/teacher/test/distribution/recycle',
+    method: 'post',
+    data: payload
+  });
+}
+
+/**
  * 获取题目列表（用于选择题目）
  * @param {Object} queryParams - 查询参数对象
  * @param {number} queryParams.pageIndex - 页码

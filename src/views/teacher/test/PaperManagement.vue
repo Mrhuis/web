@@ -57,7 +57,11 @@
           >
             删除
           </el-button>
-          <el-button size="small" type="info" @click="handleToggleEnabled(scope.row)">
+          <el-button
+            size="small"
+            :type="scope.row.isEnabled === 1 ? 'info' : 'success'"
+            @click="handleToggleEnabled(scope.row)"
+          >
             {{ scope.row.isEnabled === 1 ? '禁用' : '启用' }}
           </el-button>
         </template>

@@ -35,7 +35,7 @@ export const useUserStore = defineStore('user', {
       } else if (this.role === 'student') {
       router.push('/student')
       } else if (this.role === 'admin') {
-      router.push('/admin/dashboard')
+      router.push('/admin/resource-manage')
     }
     },
 
