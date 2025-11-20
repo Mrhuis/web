@@ -31,7 +31,7 @@ const logout = () => {
     <div class="side-menu" v-if="!props.hideSidebar">
       <el-menu :default-active="route.path" router>
         <el-menu-item index="/student/learning-center">学习中心</el-menu-item>
-        <el-menu-item index="/student/practice">测验中心</el-menu-item>
+        <el-menu-item index="/student/test-center">测验中心</el-menu-item>
         <el-menu-item index="/student/message">消息中心</el-menu-item>
         <el-menu-item index="/student/profile">个人信息管理</el-menu-item>
       </el-menu>

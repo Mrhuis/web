@@ -15,9 +15,18 @@ const routes = [
   // Student routes
   { path: '/student', redirect: '/student/learning-center' },
   { path: '/student/learning-center', component: () => import('./views/student/LearningCenter.vue') },
-  { path: '/student/practice', component: () => import('./views/student/test_center/index.vue') },
-  { path: '/student/test-center', component: () => import('./views/student/test_center/index.vue') },
+  { path: '/student/practice', redirect: '/student/test-center/list' },
+  {
+    path: '/student/test-center',
+    component: () => import('./views/student/test_center/index.vue'),
+    children: [
+      { path: '', redirect: '/student/test-center/list' },
+      { path: 'list', name: 'StudentTestCenterList', component: () => import('./views/student/test_center/ExamList.vue') },
+      { path: 'results', name: 'StudentTestResultList', component: () => import('./views/student/test_center/ResultList.vue') }
+    ]
+  },
   { path: '/student/test-center/exam/:paperId', name: 'StudentExamPaper', component: () => import('./views/student/test_center/ExamPaper.vue') },
+  { path: '/student/test-center/results/:paperId', name: 'StudentTestResultDetail', component: () => import('./views/student/test_center/ResultDetail.vue') },
   { path: '/student/message', component: () => import('./views/student/message/index.vue') },
   { path: '/student/profile', component: () => import('./views/student/profile/index.vue') },
 

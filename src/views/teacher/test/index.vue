@@ -28,6 +28,7 @@
           <PaperManagement v-if="activeTab === 'paper'" />
           <QuestionManagement v-if="activeTab === 'question'" />
           <DistributionManagement v-if="activeTab === 'distribution'" />
+          <GradingManagement v-if="activeTab === 'grading'" />
         </div>
       </div>
     </div>
@@ -36,18 +37,20 @@
 
 <script setup>
 import { ref } from 'vue';
-import { Document, EditPen, Promotion } from '@element-plus/icons-vue';
+import { Document, EditPen, Promotion, Finished } from '@element-plus/icons-vue';
 import TeacherLayout from '../layout/TeacherLayout.vue';
 import PaperManagement from './PaperManagement.vue';
 import QuestionManagement from './QuestionManagement.vue';
 import DistributionManagement from './DistributionManagement.vue';
+import GradingManagement from './GradingManagement.vue';
 
 const activeTab = ref('paper');
 
 const menuItems = [
   { key: 'paper', label: '试卷管理', icon: Document },
   { key: 'question', label: '题目管理', icon: EditPen },
-  { key: 'distribution', label: '发布管理', icon: Promotion }
+  { key: 'distribution', label: '发布管理', icon: Promotion },
+  { key: 'grading', label: '测验批阅', icon: Finished }
 ];
 </script>
 

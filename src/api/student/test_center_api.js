@@ -11,7 +11,7 @@ export const testCenterApi = {
    */
   getExamPapersByStudentUserKey(userKey) {
     return request({
-      url: '/student/test-center/exam-papers',
+      url: '/student/test-center-do/exam-papers',
       method: 'get',
       params: { userKey }
     })
@@ -24,7 +24,7 @@ export const testCenterApi = {
    */
   getQuestionsByPaperId(paperId) {
     return request({
-      url: '/student/test-center/exam-paper-questions',
+      url: '/student/test-center-do/exam-paper-questions',
       method: 'get',
       params: { paperId }
     })
@@ -37,7 +37,7 @@ export const testCenterApi = {
    */
   getItemByItemKey(itemKey) {
     return request({
-      url: `/student/test-center/item/${itemKey}`,
+      url: `/student/test-center-do/item/${itemKey}`,
       method: 'get'
     })
   },
@@ -52,7 +52,7 @@ export const testCenterApi = {
    */
   getAnswerByUserKeyPaperIdItemKey(params) {
     return request({
-      url: '/student/test-center/answer',
+      url: '/student/test-center-do/answer',
       method: 'get',
       params
     })
@@ -70,7 +70,7 @@ export const testCenterApi = {
    */
   saveOrUpdateAnswer(data) {
     return request({
-      url: '/student/test-center/answer',
+      url: '/student/test-center-do/answer',
       method: 'post',
       data
     })
@@ -84,7 +84,7 @@ export const testCenterApi = {
    */
   completeExam(userKey, paperId) {
     return request({
-      url: '/student/test-center/complete-exam',
+      url: '/student/test-center-do/complete-exam',
       method: 'post',
       params: { userKey, paperId }
     })
@@ -98,7 +98,7 @@ export const testCenterApi = {
    */
   checkExamCompleted(userKey, paperId) {
     return request({
-      url: '/student/test-center/check-exam-completed',
+      url: '/student/test-center-do/check-exam-completed',
       method: 'get',
       params: { userKey, paperId }
     })
