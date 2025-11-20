@@ -6,8 +6,12 @@ const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
 
-defineProps({
-  activeMenu: String
+const props = defineProps({
+  activeMenu: String,
+  hideSidebar: {
+    type: Boolean,
+    default: false
+  }
 });
 
 const logout = () => {
@@ -24,7 +28,7 @@ const logout = () => {
     <el-button type="danger" @click="logout">退出登录</el-button>
   </el-header>
   <div class="main-layout">
-    <div class="side-menu">
+    <div class="side-menu" v-if="!props.hideSidebar">
       <el-menu :default-active="route.path" router>
         <el-menu-item index="/student/learning-center">学习中心</el-menu-item>
         <el-menu-item index="/student/practice">测验中心</el-menu-item>
@@ -32,7 +36,7 @@ const logout = () => {
         <el-menu-item index="/student/profile">个人信息管理</el-menu-item>
       </el-menu>
     </div>
-    <div class="content">
+    <div :class="['content', { 'full-width': props.hideSidebar }]">
       <slot></slot>
     </div>
   </div>
@@ -43,4 +47,5 @@ const logout = () => {
 .main-layout { display: flex; min-height: 100vh; }
 .side-menu { width: 200px; background: #f5f7fa; }
 .content { flex: 1; padding: 24px; }
+.content.full-width { width: 100%; }
 </style>

@@ -21,7 +21,7 @@
       </el-select>
       <el-input
         v-model="searchKeyword"
-        placeholder="搜索题目ID"
+        placeholder="搜索题目标识"
         style="width: 300px; margin-left: 16px;"
         clearable
         @clear="handleSearch"
@@ -42,7 +42,7 @@
     >
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="paperTitle" label="所属试卷" min-width="200" />
-      <el-table-column prop="itemId" label="题目ID" width="120" />
+      <el-table-column prop="itemKey" label="题目标识" width="120" />
       <el-table-column prop="sortNum" label="排序" width="100" />
       <el-table-column prop="actualScore" label="分值" width="100" />
       <el-table-column label="操作" width="250" fixed="right">
@@ -94,9 +94,9 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="题目ID" prop="itemId">
+        <el-form-item label="题目标识" prop="itemKey">
           <el-select
-            v-model="questionForm.itemId"
+            v-model="questionForm.itemKey"
             placeholder="请选择题目"
             style="width: 100%;"
             filterable
@@ -108,9 +108,9 @@
           >
             <el-option
               v-for="item in itemOptions"
-              :key="item.id"
-              :label="`${item.id} - ${item.itemKey || ''}${item.content ? ' - ' + (item.content.length > 50 ? item.content.substring(0, 50) + '...' : item.content) : ''}`"
-              :value="item.id"
+              :key="item.itemKey"
+              :label="`${item.itemKey || ''}${item.content ? ' - ' + (item.content.length > 50 ? item.content.substring(0, 50) + '...' : item.content) : ''}`"
+              :value="item.itemKey"
             />
           </el-select>
         </el-form-item>
@@ -175,7 +175,7 @@ const pagination = reactive({
 
 const questionForm = reactive({
   paperId: null,
-  itemId: null,
+  itemKey: null,
   sortNum: 1,
   actualScore: 10.0
 });
@@ -184,7 +184,7 @@ const questionRules = {
   paperId: [
     { required: true, message: '请选择所属试卷', trigger: 'change' }
   ],
-  itemId: [
+  itemKey: [
     { required: true, message: '请选择题目', trigger: 'change' }
   ],
   sortNum: [
@@ -268,7 +268,7 @@ const fetchQuestionList = async () => {
       pageIndex: pagination.current,
       pageSize: pagination.size,
       paperId: selectedPaperId.value || undefined,
-      itemId: searchKeyword.value ? parseInt(searchKeyword.value) || undefined : undefined
+      itemKey: searchKeyword.value || undefined
     });
     
     if (response.success) {
@@ -342,17 +342,17 @@ const handleEdit = async (row) => {
     const response = await getExamPaperQuestionDetail(row.id);
     
     if (response.success && response.data) {
-      const itemId = response.data.itemId;
+      const itemKey = response.data.itemKey;
       
       Object.assign(questionForm, {
         paperId: response.data.paperId,
-        itemId: itemId,
+        itemKey: itemKey,
         sortNum: response.data.sortNum || 1,
         actualScore: response.data.actualScore || 10.0
       });
       
       // 如果题目列表中不包含当前题目，需要先加载题目列表
-      if (itemId && !itemOptions.value.find(item => item.id === itemId)) {
+      if (itemKey && !itemOptions.value.find(item => item.itemKey === itemKey)) {
         await fetchItemOptions();
       }
       
@@ -427,7 +427,7 @@ const handleSubmit = async () => {
 const resetForm = () => {
   Object.assign(questionForm, {
     paperId: selectedPaperId.value || null,
-    itemId: null,
+    itemKey: null,
     sortNum: 1,
     actualScore: 10.0
   });

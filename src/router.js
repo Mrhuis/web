@@ -15,7 +15,9 @@ const routes = [
   // Student routes
   { path: '/student', redirect: '/student/learning-center' },
   { path: '/student/learning-center', component: () => import('./views/student/LearningCenter.vue') },
-  { path: '/student/practice', component: () => import('./views/student/practice.vue') },
+  { path: '/student/practice', component: () => import('./views/student/test_center/index.vue') },
+  { path: '/student/test-center', component: () => import('./views/student/test_center/index.vue') },
+  { path: '/student/test-center/exam/:paperId', name: 'StudentExamPaper', component: () => import('./views/student/test_center/ExamPaper.vue') },
   { path: '/student/message', component: () => import('./views/student/message/index.vue') },
   { path: '/student/profile', component: () => import('./views/student/profile/index.vue') },
 

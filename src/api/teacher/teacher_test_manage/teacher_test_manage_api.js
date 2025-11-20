@@ -88,7 +88,7 @@ export function getExamPaperDetail(id) {
  * @param {number} queryParams.pageIndex - 页码
  * @param {number} queryParams.pageSize - 每页数量
  * @param {number} queryParams.paperId - 试卷ID
- * @param {number} queryParams.itemId - 题目ID
+ * @param {string} queryParams.itemKey - 题目标识
  * @returns {Promise} 题目列表数据
  */
 export function getExamPaperQuestionList(queryParams = {}) {
@@ -103,7 +103,7 @@ export function getExamPaperQuestionList(queryParams = {}) {
  * 添加试卷题目
  * @param {Object} questionData - 题目信息
  * @param {number} questionData.paperId - 试卷ID
- * @param {number} questionData.itemId - 题目ID
+ * @param {string} questionData.itemKey - 题目标识
  * @param {number} questionData.sortNum - 题目顺序
  * @param {number} questionData.actualScore - 实际分值
  * @returns {Promise} 添加结果
@@ -121,7 +121,7 @@ export function addExamPaperQuestion(questionData) {
  * @param {Object} questionData - 题目信息
  * @param {number} questionData.id - 关联ID
  * @param {number} questionData.paperId - 试卷ID
- * @param {number} questionData.itemId - 题目ID
+ * @param {string} questionData.itemKey - 题目标识
  * @param {number} questionData.sortNum - 题目顺序
  * @param {number} questionData.actualScore - 实际分值
  * @returns {Promise} 更新结果
