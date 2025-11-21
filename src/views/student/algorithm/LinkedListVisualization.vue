@@ -1,135 +1,126 @@
 <template>
   <div class="linkedlist-visualization">
-    <h2>链表算法可视化</h2>
-    <p>学习链表相关的操作和算法</p>
-    
-    <div class="algorithm-list">
-      <div
-        v-for="algorithm in algorithms"
-        :key="algorithm.id"
-        class="algorithm-item"
-        @click="selectAlgorithm(algorithm)"
-      >
-        <h3>{{ algorithm.name }}</h3>
-        <p>{{ algorithm.description }}</p>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">链表算法可视化</h1>
+        <p class="page-subtitle">学习链表相关的插入、删除、反转和指针技巧</p>
       </div>
     </div>
-    
-    <div v-if="selectedAlgorithm" class="visualization-area">
-      <h3>{{ selectedAlgorithm.name }}</h3>
-      <div class="linkedlist-display">
-        <div
-          v-for="(node, index) in linkedList"
-          :key="index"
-          class="linkedlist-node"
-        >
-          <div class="node-value">{{ node.value }}</div>
-          <div v-if="index < linkedList.length - 1" class="node-pointer">→</div>
-        </div>
-      </div>
-    </div>
+
+    <AlgorithmList :algorithms="algorithms" @select="openDialog" />
+
+    <AlgorithmDialog
+      v-model="dialogVisible"
+      :algorithm="currentAlgorithm"
+      :loading="loading"
+      :has-data="hasData"
+      :current-array="currentArray"
+      :current-step-index="currentStepIndex"
+      :total-steps="steps.length"
+      :current-action="currentAction"
+      :current-pointers="currentPointers"
+      :changed-elements="changedElements"
+      :is-search-algorithm="false"
+      :search-indices="[]"
+      :current-search-step="-1"
+      :is-playing="isPlaying"
+      :is-linked-list="true"
+      @close="handleDialogClose"
+      @execute="handleExecute"
+      @reset="handleReset"
+      @toggle-play="togglePlay"
+      @next-step="nextStep"
+      @previous-step="previousStep"
+      @reset-step="resetStep"
+      @step-change="handleStepChange"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue';
+import { LINKED_LIST_ALGORITHMS } from './config/linkedListAlgorithms';
+import { useLinkedListVisualization } from './composables/useLinkedListVisualization';
+import AlgorithmList from './components/AlgorithmList.vue';
+import AlgorithmDialog from './components/AlgorithmDialog.vue';
 
-const algorithms = ref([
-  { id: 'insert-at-beginning', name: '在开头插入', description: '在链表头部插入新节点' },
-  { id: 'insert-at-end', name: '在末尾插入', description: '在链表尾部插入新节点' },
-  { id: 'delete-node', name: '删除节点', description: '删除指定值的节点' },
-  { id: 'reverse-list', name: '反转链表', description: '将链表节点顺序颠倒' },
-  { id: 'find-middle', name: '查找中间节点', description: '使用快慢指针找到中间节点' },
-  { id: 'detect-cycle', name: '检测环', description: '检测链表中是否存在环' }
-])
+const algorithms = ref(LINKED_LIST_ALGORITHMS);
+const dialogVisible = ref(false);
+const currentAlgorithm = ref(null);
 
-const selectedAlgorithm = ref(null)
-const linkedList = ref([
-  { value: 1, next: 1 },
-  { value: 2, next: 2 },
-  { value: 3, next: 3 },
-  { value: 4, next: 4 },
-  { value: 5, next: null }
-])
+// 使用链表可视化组合式函数
+const {
+  loading,
+  steps,
+  currentStepIndex,
+  isPlaying,
+  hasData,
+  currentArray,
+  currentAction,
+  currentPointers,
+  changedElements,
+  resetVisualization,
+  executeAlgorithm: executeAlgorithmCore,
+  togglePlay,
+  nextStep,
+  previousStep,
+  resetStep,
+  handleStepChange
+} = useLinkedListVisualization();
 
-const selectAlgorithm = (algorithm) => {
-  selectedAlgorithm.value = algorithm
-}
+const openDialog = (algorithm) => {
+  currentAlgorithm.value = algorithm;
+  dialogVisible.value = true;
+  handleReset();
+};
+
+const handleDialogClose = () => {
+  resetVisualization();
+};
+
+const handleExecute = async ({ arrayInput, target }) => {
+  if (!currentAlgorithm.value) return;
+
+  await executeAlgorithmCore(
+    currentAlgorithm.value.id,
+    arrayInput,
+    target
+  );
+};
+
+const handleReset = () => {
+  resetVisualization();
+};
+
+// 监听弹窗关闭，清理定时器和状态
+watch(dialogVisible, (newVal) => {
+  if (!newVal) {
+    resetVisualization();
+  }
+});
 </script>
 
 <style scoped>
 .linkedlist-visualization {
   padding: 20px;
+  min-height: 100vh;
+  background: #f5f7fa;
 }
 
-.algorithm-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-  margin: 20px 0;
+.page-header {
+  margin-bottom: 24px;
 }
 
-.algorithm-item {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
 }
 
-.algorithm-item:hover {
-  border-color: #3498db;
-  transform: translateY(-2px);
-}
-
-.algorithm-item h3 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-}
-
-.algorithm-item p {
+.page-subtitle {
+  color: #6b7280;
+  font-size: 14px;
   margin: 0;
-  color: #7f8c8d;
-  font-size: 0.9rem;
 }
-
-.visualization-area {
-  margin-top: 30px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.linkedlist-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.linkedlist-node {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.node-value {
-  background: white;
-  border: 2px solid #3498db;
-  border-radius: 6px;
-  padding: 10px 15px;
-  font-weight: bold;
-  color: #2c3e50;
-  min-width: 40px;
-  text-align: center;
-}
-
-.node-pointer {
-  font-size: 1.5rem;
-  color: #3498db;
-  font-weight: bold;
-}
-</style> 
+</style>

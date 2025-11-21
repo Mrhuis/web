@@ -1,156 +1,126 @@
 <template>
-  <div class="hashtable-visualization">
-    <h2>哈希表算法可视化</h2>
-    <p>学习哈希表的操作和冲突解决方法</p>
-    
-    <div class="algorithm-list">
-      <div
-        v-for="algorithm in algorithms"
-        :key="algorithm.id"
-        class="algorithm-item"
-        @click="selectAlgorithm(algorithm)"
-      >
-        <h3>{{ algorithm.name }}</h3>
-        <p>{{ algorithm.description }}</p>
+  <div class="hash-table-visualization">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">哈希表算法可视化</h1>
+        <p class="page-subtitle">学习哈希表插入、查找与删除操作的执行过程</p>
       </div>
     </div>
-    
-    <div v-if="selectedAlgorithm" class="visualization-area">
-      <h3>{{ selectedAlgorithm.name }}</h3>
-      <div class="hashtable-display">
-        <div class="hashtable-container">
-          <div
-            v-for="(bucket, index) in hashTable"
-            :key="index"
-            class="hash-bucket"
-          >
-            <div class="bucket-index">{{ index }}</div>
-            <div class="bucket-items">
-              <div
-                v-for="(item, itemIndex) in bucket"
-                :key="itemIndex"
-                class="bucket-item"
-              >
-                {{ item.key }}: {{ item.value }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+
+    <AlgorithmList :algorithms="algorithms" @select="openDialog" />
+
+    <AlgorithmDialog
+      v-model="dialogVisible"
+      :algorithm="currentAlgorithm"
+      :loading="loading"
+      :has-data="hasData"
+      :current-array="currentArray"
+      :current-step-index="currentStepIndex"
+      :total-steps="steps.length"
+      :current-action="currentAction"
+      :current-pointers="currentPointers"
+      :changed-elements="changedElements"
+      :is-search-algorithm="false"
+      :search-indices="[]"
+      :current-search-step="-1"
+      :is-playing="isPlaying"
+      :is-hash-table="isHashTable"
+      @close="handleDialogClose"
+      @execute="handleExecute"
+      @reset="handleReset"
+      @toggle-play="togglePlay"
+      @next-step="nextStep"
+      @previous-step="previousStep"
+      @reset-step="resetStep"
+      @step-change="handleStepChange"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue';
+import AlgorithmList from './components/AlgorithmList.vue';
+import AlgorithmDialog from './components/AlgorithmDialog.vue';
+import { HASH_TABLE_ALGORITHMS } from './config/hashTableAlgorithms';
+import { useHashTableVisualization } from './composables/useHashTableVisualization';
 
-const algorithms = ref([
-  { id: 'insert', name: '插入操作', description: '向哈希表中插入键值对' },
-  { id: 'search', name: '查找操作', description: '根据键查找对应的值' },
-  { id: 'delete', name: '删除操作', description: '删除指定的键值对' }
-])
+const algorithms = ref(HASH_TABLE_ALGORITHMS);
+const dialogVisible = ref(false);
+const currentAlgorithm = ref(null);
 
-const selectedAlgorithm = ref(null)
-const hashTable = ref([
-  [{ key: 'apple', value: 1 }],
-  [{ key: 'banana', value: 2 }],
-  [],
-  [{ key: 'orange', value: 3 }, { key: 'grape', value: 4 }],
-  [],
-  [{ key: 'mango', value: 5 }],
-  [],
-  []
-])
+const {
+  loading,
+  steps,
+  currentStepIndex,
+  isPlaying,
+  hasData,
+  currentArray,
+  currentAction,
+  currentPointers,
+  changedElements,
+  resetVisualization,
+  executeAlgorithm,
+  togglePlay,
+  nextStep,
+  previousStep,
+  resetStep,
+  handleStepChange
+} = useHashTableVisualization();
 
-const selectAlgorithm = (algorithm) => {
-  selectedAlgorithm.value = algorithm
-}
+const isHashTable = computed(() => currentAlgorithm.value?.category === 'hash-table');
+
+const openDialog = (algorithm) => {
+  currentAlgorithm.value = algorithm;
+  dialogVisible.value = true;
+  handleReset();
+};
+
+const handleDialogClose = () => {
+  resetVisualization();
+};
+
+const handleExecute = async ({ keysInput, valuesInput, hashKey, hashValue }) => {
+  if (!currentAlgorithm.value) return;
+  await executeAlgorithm(currentAlgorithm.value.id, {
+    keysInput,
+    valuesInput,
+    hashKey,
+    hashValue
+  });
+};
+
+const handleReset = () => {
+  resetVisualization();
+};
+
+watch(dialogVisible, (newVal) => {
+  if (!newVal) {
+    resetVisualization();
+  }
+});
 </script>
 
 <style scoped>
-.hashtable-visualization {
+.hash-table-visualization {
   padding: 20px;
+  min-height: 100vh;
+  background: #f5f7fa;
 }
 
-.algorithm-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-  margin: 20px 0;
+.page-header {
+  margin-bottom: 24px;
 }
 
-.algorithm-item {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
 }
 
-.algorithm-item:hover {
-  border-color: #3498db;
-  transform: translateY(-2px);
-}
-
-.algorithm-item h3 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-}
-
-.algorithm-item p {
+.page-subtitle {
+  color: #6b7280;
+  font-size: 14px;
   margin: 0;
-  color: #7f8c8d;
-  font-size: 0.9rem;
 }
-
-.visualization-area {
-  margin-top: 30px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.hashtable-display {
-  margin-top: 15px;
-}
-
-.hashtable-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.hash-bucket {
-  background: white;
-  border: 2px solid #3498db;
-  border-radius: 8px;
-  padding: 10px;
-  min-height: 80px;
-}
-
-.bucket-index {
-  font-weight: bold;
-  color: #3498db;
-  text-align: center;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-}
-
-.bucket-items {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.bucket-item {
-  background: #ecf0f1;
-  padding: 5px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  color: #2c3e50;
-  text-align: center;
-}
-</style> 
+</style>

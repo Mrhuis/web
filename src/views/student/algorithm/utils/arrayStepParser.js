@@ -1,17 +1,18 @@
 /**
- * 数组步骤解析工具
- * 用于从后端返回的 AlgorithmStep 对象中提取数组数据
+ * 数组 / 链表步骤解析工具
+ * 用于从后端返回的步骤对象中提取线性展示所需的数据
  */
 
 /**
- * 从 AlgorithmStep 对象中提取数组
+ * 从步骤对象中提取线性结构（数组或链表）
  * @param {Object|Array} step - 算法步骤对象或数组
- * @returns {Array} 解析后的数组，每个元素包含 {value, originalIndex, index}
+ * @returns {Array} 解析后的数组，每个元素至少包含 {value, index}
+ *                  如有 originalIndex / prevIndex / nextIndex 也一并带上
  */
 export const extractArrayFromStep = (step) => {
   if (!step) return [];
   
-  // 新的后端格式：AlgorithmStep 对象，包含 arrayState, pointers, action
+  // 数组算法：新的后端格式，AlgorithmStep 对象，包含 arrayState, pointers, action
   if (step.arrayState) {
     // 新格式：arrayState 是一个数组，每个元素包含 {value, originalIndex}
     // 这样可以保持数组顺序，避免 JavaScript 对象键排序的问题
@@ -46,6 +47,21 @@ export const extractArrayFromStep = (step) => {
         index: index
       }));
     }
+  }
+
+  // 链表算法：LinkedListAlgorithmStep 对象，包含 listState, pointers, action
+  if (step.listState && Array.isArray(step.listState)) {
+    return step.listState.map((node, index) => ({
+      value: node.value,
+      // 使用当前位置作为 originalIndex，保证高亮等逻辑可用
+      originalIndex: index,
+      // 透传链表结构信息，后续如果要做更复杂的链表可视化可以直接使用
+      prevIndex: node.prevIndex,
+      nextIndex: node.nextIndex,
+      // 透传后端提供的节点自身指针标识
+      pointerIndex: node.pointerIndex,
+      index
+    }));
   }
   
   // 兼容旧格式：如果 step 是数组
