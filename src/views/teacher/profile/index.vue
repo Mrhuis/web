@@ -59,8 +59,8 @@
             class="profile-form"
             :disabled="loading"
           >
-            <el-form-item label="用户名" prop="username">
-              <el-input v-model.trim="profileForm.username" placeholder="请输入用户名" clearable />
+            <el-form-item label="账号" prop="username">
+              <el-input v-model.trim="profileForm.username" placeholder="请输入账号" clearable />
             </el-form-item>
             <el-form-item label="显示昵称" prop="nickname">
               <el-input v-model.trim="profileForm.nickname" placeholder="用于展示的昵称" clearable />
@@ -135,7 +135,7 @@ const statusTagMap = {
 };
 
 const profileRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
   nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
   password: [
     { validator: validatePassword, trigger: 'blur' }
