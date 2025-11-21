@@ -18,12 +18,6 @@
         </div>
       </el-tab-pane>
 
-      <!-- 动画管理 -->
-      <el-tab-pane label="动画管理" name="animations">
-        <div class="tab-content">
-          <AnimationManagement :selectedPluginForAnimation="selectedPluginForAnimation" />
-        </div>
-      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -32,7 +26,6 @@
 import { ref, watch } from 'vue';
 import ItemManagement from './activity_components/ItemManagement.vue';
 import MediaManagement from './activity_components/MediaManagement.vue';
-import AnimationManagement from './activity_components/AnimationManagement.vue';
 
 // 活动管理相关
 const activeSubTab = ref('items');
@@ -40,7 +33,6 @@ const activeSubTab = ref('items');
 // 筛选条件
 const selectedPlugin = ref('');
 const selectedPluginForVideo = ref('');
-const selectedPluginForAnimation = ref('');
 
 // 媒体管理组件引用
 const mediaManagementRef = ref(null);

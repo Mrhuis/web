@@ -6,7 +6,7 @@
         <p class="page-subtitle">通过交互式动画了解栈的核心操作</p>
       </div>
     </div>
-
+    
     <AlgorithmList :algorithms="algorithms" @select="openDialog" />
 
     <AlgorithmDialog
@@ -121,5 +121,5 @@ watch(dialogVisible, (newVal) => {
   font-size: 14px;
   margin: 0;
 }
-</style>
+</style> 
 

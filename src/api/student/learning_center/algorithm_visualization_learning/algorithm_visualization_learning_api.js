@@ -444,6 +444,65 @@ export const algorithmVisualizationApi = {
       method: 'post',
       data: params
     });
+  },
+
+  /**
+   * 图 - 深度优先搜索可视化
+   * @param {Object} params
+   * @param {number[][]} params.adjacencyMatrix - 图的邻接矩阵
+   * @param {string[]} params.nodes - 节点标签
+   * @param {number} params.startNode - 起始节点索引
+   */
+  graphDfsVisualization(params) {
+    return request({
+      url: '/student/graph-algorithm/dfs',
+      method: 'post',
+      data: params
+    });
+  },
+
+  /**
+   * 图 - 广度优先搜索可视化
+   */
+  graphBfsVisualization(params) {
+    return request({
+      url: '/student/graph-algorithm/bfs',
+      method: 'post',
+      data: params
+    });
+  },
+
+  /**
+   * 图 - Dijkstra算法可视化
+   */
+  graphDijkstraVisualization(params) {
+    return request({
+      url: '/student/graph-algorithm/dijkstra',
+      method: 'post',
+      data: params
+    });
+  },
+
+  /**
+   * 图 - Prim算法可视化
+   */
+  graphPrimVisualization(params) {
+    return request({
+      url: '/student/graph-algorithm/prim',
+      method: 'post',
+      data: params
+    });
+  },
+
+  /**
+   * 图 - Kruskal算法可视化
+   */
+  graphKruskalVisualization(params) {
+    return request({
+      url: '/student/graph-algorithm/kruskal',
+      method: 'post',
+      data: params
+    });
   }
 };
 
