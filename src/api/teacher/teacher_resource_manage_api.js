@@ -116,7 +116,8 @@ export function createTeacherItem(data) {
 export function deleteTeacherItem(id) {
   return request({
     url: `/teacher/laitem/delete/${id}`,
-    method: 'get'
+    method: 'get',
+    suppressErrorToast: true
   });
 }
 

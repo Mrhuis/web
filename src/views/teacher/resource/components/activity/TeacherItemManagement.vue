@@ -599,6 +599,32 @@ const submitForm = () => {
   });
 };
 
+const getDeleteErrorMessage = (error) => {
+  const rawData = error?.response?.data;
+  let backendMsg = '';
+
+  if (rawData) {
+    if (typeof rawData === 'string') {
+      backendMsg = rawData;
+    } else if (typeof rawData === 'object') {
+      backendMsg = rawData.message || rawData.msg || rawData.error || '';
+    }
+  }
+
+  if (!backendMsg && error?.message) {
+    backendMsg = error.message;
+  }
+
+  if (
+    /student_answer/i.test(backendMsg) ||
+    /fk_user_answer_item/i.test(backendMsg) ||
+    /cannot delete or update a parent row/i.test(backendMsg)
+  ) {
+    return '该习题已有学生作答记录，无法删除';
+  }
+  return '删除失败';
+};
+
 const handleDelete = async (row) => {
   try {
     await ElMessageBox.confirm('确定删除该习题吗？', '提示', { type: 'warning' });
@@ -607,8 +633,8 @@ const handleDelete = async (row) => {
     fetchItems();
   } catch (error) {
     if (error !== 'cancel') {
-      console.error(error);
-      ElMessage.error('删除失败');
+      console.error('删除习题失败', error);
+      ElMessage.error(getDeleteErrorMessage(error));
     }
   }
 };

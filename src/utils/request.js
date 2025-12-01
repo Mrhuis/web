@@ -49,30 +49,33 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   response => {
     const res = response.data;
+    const suppressToast = response.config?.suppressErrorToast === true;
     
     // 检查业务逻辑状态，而不是HTTP状态码
-    if (res.success === false) {
-      ElMessage({
-        message: res.message || 'Error',
-        type: 'error',
-        duration: 5 * 1000,
-      });
-
-      // 50008:非法的token; 50012:其他客户端登录了;  50014:Token 过期了;
-      if (res.code === 50008 || res.code === 50012 || res.code === 50014) {
-        ElMessageBox.confirm(
-          '你已被登出，可以取消继续留在该页面，或者重新登录',
-          '确定登出',
-          {
-            confirmButtonText: '重新登录',
-            cancelButtonText: '取消',
-            type: 'warning',
-          }
-        ).then(() => {
-          // userStore.fedLogOut().then(() => {
-          //   location.reload(); // 为了重新实例化 vue-router 对象，避免 bug
-          // });
+    if (res?.success === false) {
+      if (!suppressToast) {
+        ElMessage({
+          message: res.message || 'Error',
+          type: 'error',
+          duration: 5 * 1000
         });
+
+        // 50008:非法的token; 50012:其他客户端登录了;  50014:Token 过期了;
+        if (res.code === 50008 || res.code === 50012 || res.code === 50014) {
+          ElMessageBox.confirm(
+            '你已被登出，可以取消继续留在该页面，或者重新登录',
+            '确定登出',
+            {
+              confirmButtonText: '重新登录',
+              cancelButtonText: '取消',
+              type: 'warning'
+            }
+          ).then(() => {
+            // userStore.fedLogOut().then(() => {
+            //   location.reload(); // 为了重新实例化 vue-router 对象，避免 bug
+            // });
+          });
+        }
       }
       return Promise.reject(new Error(res.message || 'Error'));
     } else {
@@ -82,11 +85,14 @@ service.interceptors.response.use(
   },
   error => {
     console.log('err' + error); // for debug
-    ElMessage({
-      message: error.message,
-      type: 'error',
-      duration: 5 * 1000,
-    });
+    const suppressToast = error?.config?.suppressErrorToast === true;
+    if (!suppressToast) {
+      ElMessage({
+        message: error.message,
+        type: 'error',
+        duration: 5 * 1000
+      });
+    }
     return Promise.reject(error);
   }
 );

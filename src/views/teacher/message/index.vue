@@ -214,7 +214,10 @@
               <el-empty v-else description="暂无历史消息" />
             </div>
 
-            <div class="chat-input">
+            <div
+              v-if="!isSystemConversation"
+              class="chat-input"
+            >
               <el-input
                 v-model="messageInput"
                 type="textarea"
@@ -270,6 +273,16 @@
                 </el-button>
               </div>
             </div>
+            <div
+              v-else
+              class="system-chat-tip"
+            >
+              <el-icon class="tip-icon"><InfoFilled /></el-icon>
+              <div class="tip-content">
+                <div class="tip-title">系统通知只读</div>
+                <div class="tip-text">系统通知仅支持查看，无法回复或发送新消息。</div>
+              </div>
+            </div>
           </template>
         </div>
       </div>
@@ -281,7 +294,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import dayjs from 'dayjs';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Refresh, Search, Picture, Close } from '@element-plus/icons-vue';
+import { Refresh, Search, Picture, Close, InfoFilled } from '@element-plus/icons-vue';
 import TeacherLayout from '../layout/TeacherLayout.vue';
 import { useUserStore } from '@/store/user';
 import {
@@ -295,6 +308,8 @@ import { uploadMessageImage } from '@/api/admin/admin_message_center_api';
 import { convertImagePaths } from '@/utils/imageUtils';
 
 const userStore = useUserStore();
+const SYSTEM_USER_KEY = 'system';
+const normalizeUserKey = (value) => (value === null || value === undefined ? '' : String(value).trim());
 
 const enableConvIdDebugLog =
   (typeof window !== 'undefined' && window.__ENABLE_TEACHER_MESSAGE_DEBUG__ === true) ||
@@ -325,7 +340,11 @@ const loadingUsers = ref(false);
 const simpleUsers = ref([]);
 const userSelectKeyword = ref('');
 let messagePollingTimer = null;
-const userInfoCache = ref(new Map()); // 缓存用户信息 userKey -> {username, nickname}
+const systemUserInfo = {
+  username: 'system',
+  nickname: '系统通知'
+};
+const userInfoCache = ref(new Map([[SYSTEM_USER_KEY, systemUserInfo]])); // 缓存用户信息 userKey -> {username, nickname}
 const uploadingImage = ref(false);
 const imageInputRef = ref(null);
 const pendingImageUrl = ref(null); // 待发送的图片URL
@@ -448,6 +467,15 @@ const filteredMessages = computed(() => {
         (msg.receiverKey === currentUserKey.value && msg.senderKey === chatTargetKey.value)
     )
     .sort((a, b) => dayjs(a.sendTime).valueOf() - dayjs(b.sendTime).valueOf());
+});
+
+const isSystemConversation = computed(() => {
+  if (isSystemUser(chatTargetKey.value)) {
+    return true;
+  }
+  return filteredMessages.value.some(
+    (msg) => isSystemUser(msg.senderKey) || isSystemUser(msg.receiverKey)
+  );
 });
 
 const activeConvId = computed(() => {
@@ -595,8 +623,16 @@ const formatUserLabel = (user) => {
 };
 
 // 获取用户显示名称（优先昵称，其次用户名，最后userKey）
+const isSystemUser = (userKey) => {
+  const normalized = normalizeUserKey(userKey);
+  return normalized && normalized.toLowerCase() === SYSTEM_USER_KEY;
+};
+
 const getUserDisplayName = (userKey) => {
   if (!userKey) return '';
+  if (isSystemUser(userKey)) {
+    return '系统通知';
+  }
   const info = userInfoCache.value.get(String(userKey));
   if (info) {
     return info.nickname || info.username || `用户 #${userKey}`;
@@ -606,8 +642,13 @@ const getUserDisplayName = (userKey) => {
 
 // 获取用户信息并缓存
 const fetchUserInfo = async (userKey) => {
-  if (!userKey) return;
-  const key = String(userKey);
+  const normalizedKey = normalizeUserKey(userKey);
+  if (!normalizedKey) return;
+  if (isSystemUser(normalizedKey)) {
+    userInfoCache.value.set(SYSTEM_USER_KEY, systemUserInfo);
+    return;
+  }
+  const key = normalizedKey;
   if (userInfoCache.value.has(key)) {
     return; // 已缓存，无需重复请求
   }
@@ -621,6 +662,10 @@ const fetchUserInfo = async (userKey) => {
       });
     }
   } catch (error) {
+    if (isSystemUser(key)) {
+      // 系统账号在用户表中不存在，忽略该错误
+      return;
+    }
     console.error(`获取用户信息失败 (userKey: ${key})`, error);
   }
 };
@@ -629,8 +674,8 @@ const fetchUserInfo = async (userKey) => {
 const fetchUserInfos = async (userKeys) => {
   if (!userKeys || !Array.isArray(userKeys)) return;
   const keysToFetch = userKeys
-    .map(k => String(k))
-    .filter(k => k && !userInfoCache.value.has(k));
+    .map((k) => normalizeUserKey(k))
+    .filter((k) => k && !isSystemUser(k) && !userInfoCache.value.has(k));
   
   if (keysToFetch.length === 0) return;
   
@@ -890,6 +935,11 @@ const handleSendMessage = async () => {
 
   if (chatTargetKey.value === currentUserKey.value) {
     ElMessage.warning('不能给自己发送消息');
+    return;
+  }
+
+  if (isSystemConversation.value) {
+    ElMessage.warning('系统通知只读，无法发送消息');
     return;
   }
 
@@ -1394,6 +1444,34 @@ watch(
 .remove-image-btn:hover {
   background: #e53e3e !important;
   border-color: #e53e3e !important;
+}
+
+.system-chat-tip {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.tip-icon {
+  font-size: 24px;
+  color: #2563eb;
+}
+
+.tip-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.tip-text {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 2px;
 }
 
 .message-image-container {
