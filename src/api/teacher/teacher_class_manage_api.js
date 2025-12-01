@@ -151,3 +151,16 @@ export function getClassStudentEnrollmentDetail(id) {
   });
 }
 
+/**
+ * 教师端 - 根据学生 userKey 查询其知识点正确率列表
+ * @param {string} userKey 学生标识（users.user_key）
+ * @returns {Promise<Result<Array>>}
+ */
+export function getUserKnowledgeAccuracy(userKey) {
+  return request({
+    url: `/teacher/user-knowledge-stats/${userKey}`,
+    method: 'get'
+  });
+}
+
+

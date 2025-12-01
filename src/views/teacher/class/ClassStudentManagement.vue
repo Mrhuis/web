@@ -82,7 +82,7 @@
           {{ formatDateTime(scope.row.enrolledAt) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column label="操作" width="380" fixed="right">
         <template #default="scope">
           <el-button 
             v-if="scope.row.status === 0"
@@ -98,6 +98,14 @@
             @click="handleEdit(scope.row)"
           >
             编辑
+          </el-button>
+          <el-button
+            v-if="scope.row.status === 1"
+            size="small"
+            type="info"
+            @click="handleViewKnowledgeStats(scope.row)"
+          >
+            知识点正确率
           </el-button>
           <el-button 
             size="small" 
@@ -180,13 +188,47 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 学生知识点正确率弹窗 -->
+    <el-dialog
+      v-model="knowledgeStatsDialogVisible"
+      :title="`学生 ${currentUserKeyForStats} 知识点正确率`"
+      width="820px"
+      class="knowledge-stats-dialog"
+      append-to-body
+      @opened="renderKnowledgeStatsChart"
+    >
+      <div class="knowledge-stats-chart" id="knowledgeStatsChart"></div>
+
+      <div class="knowledge-stats-table-wrapper">
+        <el-table
+          :data="knowledgeStatsList"
+          v-loading="knowledgeStatsLoading"
+          border
+          style="width: 100%;"
+        >
+          <el-table-column prop="knowledgeName" label="知识点名称" min-width="220" />
+          <el-table-column prop="knowledgeKey" label="知识点标识" min-width="200" />
+          <el-table-column prop="correctCount" label="答对次数" width="120" />
+          <el-table-column prop="totalCount" label="作答次数" width="120" />
+          <el-table-column label="正确率" width="120">
+            <template #default="scope">
+              <span>
+                {{ scope.row.totalCount > 0 ? `${scope.row.accuracy?.toFixed ? scope.row.accuracy.toFixed(2) : scope.row.accuracy}%` : '-' }}
+              </span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, nextTick } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Search } from '@element-plus/icons-vue';
+import * as echarts from 'echarts';
 import {
   getClassStudentEnrollmentList,
   addClassStudentEnrollment,
@@ -196,6 +238,7 @@ import {
   getClassList
 } from '@/api/teacher/teacher_class_manage_api';
 import { getUserList } from '@/api/admin/admin_user_manage_api';
+import { getUserKnowledgeAccuracy } from '@/api/teacher/teacher_class_manage_api';
 
 const loading = ref(false);
 const enrollmentList = ref([]);
@@ -229,6 +272,13 @@ const enrollmentForm = reactive({
   classKey: '',
   userKey: ''
 });
+
+// 学生知识点正确率弹窗相关
+const knowledgeStatsDialogVisible = ref(false);
+const knowledgeStatsLoading = ref(false);
+const currentUserKeyForStats = ref('');
+const knowledgeStatsList = ref([]);
+let knowledgeStatsChartInstance = null;
 
 const enrollmentRules = {
   classKey: [
@@ -582,6 +632,100 @@ const handleDelete = (row) => {
   }).catch(() => {});
 };
 
+// 渲染学生知识点正确率图表（柱状图）
+const renderKnowledgeStatsChart = () => {
+  nextTick(() => {
+    const el = document.getElementById('knowledgeStatsChart');
+    if (!el) return;
+
+    if (!knowledgeStatsChartInstance) {
+      knowledgeStatsChartInstance = echarts.init(el);
+    } else {
+      knowledgeStatsChartInstance.resize();
+    }
+
+    const names = knowledgeStatsList.value.map((item) => item.knowledgeName || item.knowledgeKey);
+    const accuracies = knowledgeStatsList.value.map((item) =>
+      item.totalCount > 0 ? (item.accuracy ?? 0) : 0
+    );
+
+    const option = {
+      title: {
+        text: '知识点正确率概览',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: (params) => {
+          const p = params[0];
+          const row = knowledgeStatsList.value[p.dataIndex];
+          return [
+            `${row.knowledgeName || row.knowledgeKey}`,
+            `正确率：${row.totalCount > 0 ? (row.accuracy ?? 0).toFixed(2) : '0.00'}%`,
+            `答对次数：${row.correctCount}`,
+            `作答次数：${row.totalCount}`
+          ].join('<br/>');
+        }
+      },
+      grid: { left: 60, right: 30, bottom: 80, top: 60 },
+      xAxis: {
+        type: 'category',
+        data: names,
+        axisLabel: {
+          interval: 0,
+          rotate: 40,
+          fontSize: 11,
+          formatter: (value) => (value && value.length > 8 ? `${value.slice(0, 8)}...` : value)
+        }
+      },
+      yAxis: {
+        type: 'value',
+        name: '正确率(%)',
+        min: 0,
+        max: 100
+      },
+      series: [
+        {
+          type: 'bar',
+          data: accuracies,
+          itemStyle: {
+            color: '#409EFF'
+          },
+          barMaxWidth: 40
+        }
+      ]
+    };
+
+    knowledgeStatsChartInstance.setOption(option);
+  });
+};
+
+// 查看学生知识点正确率
+const handleViewKnowledgeStats = async (row) => {
+  if (!row?.userKey) {
+    ElMessage.warning('未找到学生标识');
+    return;
+  }
+  currentUserKeyForStats.value = row.userKey;
+  knowledgeStatsDialogVisible.value = true;
+  knowledgeStatsLoading.value = true;
+  try {
+    const resp = await getUserKnowledgeAccuracy(row.userKey);
+    if (resp.success) {
+      knowledgeStatsList.value = resp.data || [];
+      renderKnowledgeStatsChart();
+    } else {
+      ElMessage.error(resp.message || '获取知识点正确率失败');
+    }
+  } catch (error) {
+    console.error('获取学生知识点正确率失败:', error);
+    ElMessage.error('获取学生知识点正确率失败');
+  } finally {
+    knowledgeStatsLoading.value = false;
+  }
+};
+
 // 重置表单
 const resetForm = () => {
   Object.assign(enrollmentForm, {
@@ -653,6 +797,24 @@ onMounted(() => {
   margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.knowledge-stats-chart {
+  width: 100%;
+  height: 320px;
+}
+
+/* 固定知识点正确率弹窗整体高度，让内部内容看起来更稳定 */
+.knowledge-stats-dialog :deep(.el-dialog__body) {
+  max-height: 600px;
+  overflow-y: visible;
+}
+
+/* 弹窗内部表格区域使用滚动条 */
+.knowledge-stats-table-wrapper {
+  margin-top: 16px;
+  max-height: 260px;
+  overflow-y: auto;
 }
 </style>
 
