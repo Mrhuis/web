@@ -8,7 +8,7 @@
       <div class="toolbar">
         <el-input
           v-model="query.username"
-          placeholder="按用户名搜索"
+          placeholder="按账号搜索"
           size="small"
           clearable
           style="width: 180px;"
@@ -49,10 +49,10 @@
 
     <el-table :data="userList" style="width:100%;" v-loading="loading">
       <el-table-column prop="id" label="ID" width="80" />
-      <!-- userKey 是业务唯一标识，例如 U1001，这里表头改成“用户标识”以避免和用户名混淆 -->
+      <!-- userKey 是业务唯一标识，例如 U1001，这里表头改成"用户标识"以避免和账号混淆 -->
       <el-table-column prop="userKey" label="用户标识" width="140" />
-      <!-- username 是登录用的账号名，这里表头改成“登录用户名” -->
-      <el-table-column prop="username" label="登录用户名" width="160" />
+      <!-- username 是登录用的账号名，这里表头改成"登录账号" -->
+      <el-table-column prop="username" label="登录账号" width="160" />
       <el-table-column prop="nickname" label="昵称" width="140" />
       <el-table-column prop="role" label="角色" width="140">
         <template #default="scope">
@@ -67,7 +67,25 @@
           <el-tag v-else type="danger">禁用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="注册时间" width="180" />
+      <el-table-column label="活跃状态" width="140">
+        <template #default="scope">
+          <el-tag :type="getActivityStatusTag(scope.row.lastActiveTime).type">
+            {{ getActivityStatusTag(scope.row.lastActiveTime).text }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="totalActiveDays" label="总活跃天数" width="140" />
+      <el-table-column prop="continuousActiveDays" label="连续活跃天数" width="150" />
+      <el-table-column label="最后活跃时间" width="190">
+        <template #default="scope">
+          {{ formatDateTime(scope.row.lastActiveTime) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="注册时间" width="180">
+        <template #default="scope">
+          {{ formatDateTime(scope.row.createdAt) }}
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="scope">
           <el-button size="small" @click="openEditDialog(scope.row)">编辑</el-button>
@@ -124,7 +142,7 @@
           <el-input v-model="dialog.form.userKey" placeholder="如 U1001" />
         </el-form-item>
         <!-- username 为登录账号 -->
-        <el-form-item label="登录用户名" prop="username">
+        <el-form-item label="登录账号" prop="username">
           <el-input v-model="dialog.form.username" />
         </el-form-item>
         <el-form-item label="密码" prop="password" v-if="!dialog.isEdit">
@@ -161,6 +179,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import dayjs from 'dayjs';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import AdminLayout from '../AdminLayout.vue';
 import {
@@ -204,9 +223,32 @@ const formRef = ref(null);
 
 const rules = {
   userKey: [{ required: true, message: '请输入业务ID', trigger: 'blur' }],
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
   role: [{ required: true, message: '请选择角色', trigger: 'change' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
+};
+
+const formatDateTime = (value) => (value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '--');
+
+const getActivityStatusTag = (lastActiveTime) => {
+  if (!lastActiveTime) {
+    return { text: '从未活跃', type: 'info' };
+  }
+  const last = dayjs(lastActiveTime);
+  if (!last.isValid()) {
+    return { text: '未知', type: 'info' };
+  }
+  const diffDays = dayjs().startOf('day').diff(last.startOf('day'), 'day');
+  if (diffDays === 0) {
+    return { text: '今日活跃', type: 'success' };
+  }
+  if (diffDays === 1) {
+    return { text: '昨日活跃', type: 'warning' };
+  }
+  if (diffDays <= 7) {
+    return { text: `${diffDays}天前活跃`, type: 'warning' };
+  }
+  return { text: '超过7天未活跃', type: 'danger' };
 };
 
 // 后端 BaseEntity 使用的是下划线命名：page_index / page_size

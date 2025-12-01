@@ -42,7 +42,12 @@
               </el-descriptions-item>
               <el-descriptions-item label="总活跃天数">{{ profileForm.totalActiveDays ?? 0 }}</el-descriptions-item>
               <el-descriptions-item label="连续活跃天数">{{ profileForm.continuousActiveDays ?? 0 }}</el-descriptions-item>
-              <el-descriptions-item label="最后活跃时间">{{ formatDateTime(profileDetail.lastActiveTime) }}</el-descriptions-item>
+              <el-descriptions-item label="活跃状态">
+                <el-tag :type="getActivityStatus(profileDetail?.lastActiveTime).type">
+                  {{ getActivityStatus(profileDetail?.lastActiveTime).text }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="最后活跃时间">{{ formatDateTime(profileDetail?.lastActiveTime) }}</el-descriptions-item>
               <el-descriptions-item label="注册时间">{{ formatDateTime(profileDetail.createdAt) }}</el-descriptions-item>
               <el-descriptions-item label="最近更新时间">{{ formatDateTime(profileDetail.updatedAt) }}</el-descriptions-item>
             </el-descriptions>
@@ -120,6 +125,17 @@
             >
               <!-- 班级信息 -->
               <el-card shadow="never" style="margin-bottom: 16px;">
+                <div class="class-info-header">
+                  <span class="class-info-title">班级信息</span>
+                  <el-button
+                    type="danger"
+                    size="small"
+                    :loading="leaveClassLoading[classItem.classKey]"
+                    @click="handleLeaveClass(classItem)"
+                  >
+                    退出班级
+                  </el-button>
+                </div>
                 <el-descriptions :column="2" border>
                   <el-descriptions-item label="班级标识">{{ classItem.classKey }}</el-descriptions-item>
                   <el-descriptions-item label="班级名称">{{ classItem.className }}</el-descriptions-item>
@@ -203,12 +219,12 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import dayjs from 'dayjs';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { RefreshRight } from '@element-plus/icons-vue';
 import StudentLayout from '../StudentLayout.vue';
 import { useUserStore } from '@/store/user';
 import { getTeacherProfile, updateTeacherProfile } from '@/api/teacher/teacher_profile_api';
-import { getStudentClasses, getClassInfoByKey, getClassStudents, joinClassByInviteCode } from '@/api/student/student_class_api';
+import { getStudentClasses, getClassInfoByKey, getClassStudents, joinClassByInviteCode, leaveClass } from '@/api/student/student_class_api';
 import { getUserBasicInfo } from '@/api/admin/admin_user_manage_api';
 
 const userStore = useUserStore();
@@ -225,6 +241,7 @@ const studentClasses = ref([]);
 const activeClassTab = ref('');
 const classStudents = ref({}); // { classKey: [students] }
 const studentsLoading = ref({}); // { classKey: boolean }
+const leaveClassLoading = ref({}); // { classKey: boolean }
 
 // 加入班级相关
 const joinClassDialogVisible = ref(false);
@@ -284,6 +301,27 @@ function validatePassword(rule, value, callback) {
 }
 
 const formatDateTime = (value) => (value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '--');
+
+const getActivityStatus = (lastActiveTime) => {
+  if (!lastActiveTime) {
+    return { text: '从未活跃', type: 'info' };
+  }
+  const last = dayjs(lastActiveTime);
+  if (!last.isValid()) {
+    return { text: '未知', type: 'info' };
+  }
+  const diffDays = dayjs().startOf('day').diff(last.startOf('day'), 'day');
+  if (diffDays === 0) {
+    return { text: '今日活跃', type: 'success' };
+  }
+  if (diffDays === 1) {
+    return { text: '昨日活跃', type: 'warning' };
+  }
+  if (diffDays <= 7) {
+    return { text: `${diffDays}天前活跃`, type: 'warning' };
+  }
+  return { text: '超过7天未活跃', type: 'danger' };
+};
 
 const captureSnapshot = (source) => ({
   id: source.id,
@@ -388,18 +426,18 @@ const handleReset = () => {
   }
 };
 
-// 查看所属班级
-const handleViewClasses = async () => {
+const loadStudentClassesData = async () => {
   if (!userStore.userKey) {
     ElMessage.error('未找到当前用户标识，请重新登录');
     return;
   }
 
-  classDialogVisible.value = true;
   classLoading.value = true;
   studentClasses.value = [];
   classStudents.value = {};
   studentsLoading.value = {};
+  leaveClassLoading.value = {};
+  activeClassTab.value = '';
 
   try {
     // 获取学生所属的班级列表
@@ -445,6 +483,17 @@ const handleViewClasses = async () => {
   } finally {
     classLoading.value = false;
   }
+};
+
+// 查看所属班级
+const handleViewClasses = async () => {
+  if (!userStore.userKey) {
+    ElMessage.error('未找到当前用户标识，请重新登录');
+    return;
+  }
+
+  classDialogVisible.value = true;
+  await loadStudentClassesData();
 };
 
 // 加载班级学生列表
@@ -543,7 +592,7 @@ const handleJoinClassSubmit = async () => {
           joinClassDialogVisible.value = false;
           // 刷新班级列表
           if (classDialogVisible.value) {
-            await handleViewClasses();
+            await loadStudentClassesData();
           }
         } else {
           ElMessage.error(response.message || '加入班级失败');
@@ -571,6 +620,54 @@ const handleJoinClassSubmit = async () => {
       }
     }
   });
+};
+
+// 退出班级
+const handleLeaveClass = async (classItem) => {
+  if (!classItem || !classItem.classKey) return;
+
+  if (!userStore.userKey) {
+    ElMessage.error('未找到当前用户标识，请重新登录');
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要退出班级「${classItem.className || classItem.classKey}」吗？退出后将无法再查看该班级信息，需重新通过邀请码加入。`,
+      '提示',
+      {
+        type: 'warning',
+        confirmButtonText: '确认退出',
+        cancelButtonText: '取消'
+      }
+    );
+  } catch {
+    return;
+  }
+
+  // 设置加载状态
+  leaveClassLoading.value = {
+    ...leaveClassLoading.value,
+    [classItem.classKey]: true
+  };
+
+  try {
+    const response = await leaveClass(classItem.classKey, userStore.userKey);
+    if (response.success) {
+      ElMessage.success('已退出班级');
+      await loadStudentClassesData();
+    } else {
+      ElMessage.error(response.message || '退出班级失败');
+    }
+  } catch (error) {
+    console.error('退出班级失败:', error);
+    ElMessage.error('退出班级失败，请稍后重试');
+  } finally {
+    leaveClassLoading.value = {
+      ...leaveClassLoading.value,
+      [classItem.classKey]: false
+    };
+  }
 };
 
 onMounted(() => {
@@ -650,6 +747,18 @@ onMounted(() => {
 .students-table-container {
   max-height: 300px;
   overflow: hidden;
+}
+
+.class-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.class-info-title {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 @media (max-width: 1200px) {

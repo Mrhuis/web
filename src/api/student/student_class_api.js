@@ -70,3 +70,20 @@ export function joinClassByInviteCode(inviteCode, userKey) {
   });
 }
 
+/**
+ * 学生退出班级
+ * @param {string} classKey - 班级标识
+ * @param {string} userKey - 学生userKey
+ * @returns {Promise}
+ */
+export function leaveClass(classKey, userKey) {
+  return request({
+    url: '/student/class/leave',
+    method: 'post',
+    data: {
+      classKey,
+      userKey
+    }
+  });
+}
+

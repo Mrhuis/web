@@ -36,7 +36,12 @@
               </el-descriptions-item>
               <el-descriptions-item label="总活跃天数">{{ profileForm.totalActiveDays ?? 0 }}</el-descriptions-item>
               <el-descriptions-item label="连续活跃天数">{{ profileForm.continuousActiveDays ?? 0 }}</el-descriptions-item>
-              <el-descriptions-item label="最后活跃时间">{{ formatDateTime(profileDetail.lastActiveTime) }}</el-descriptions-item>
+              <el-descriptions-item label="活跃状态">
+                <el-tag :type="getActivityStatus(profileDetail?.lastActiveTime).type">
+                  {{ getActivityStatus(profileDetail?.lastActiveTime).text }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="最后活跃时间">{{ formatDateTime(profileDetail?.lastActiveTime) }}</el-descriptions-item>
               <el-descriptions-item label="注册时间">{{ formatDateTime(profileDetail.createdAt) }}</el-descriptions-item>
               <el-descriptions-item label="最近更新时间">{{ formatDateTime(profileDetail.updatedAt) }}</el-descriptions-item>
             </el-descriptions>
@@ -155,6 +160,27 @@ function validatePassword(rule, value, callback) {
 }
 
 const formatDateTime = (value) => (value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '--');
+
+const getActivityStatus = (lastActiveTime) => {
+  if (!lastActiveTime) {
+    return { text: '从未活跃', type: 'info' };
+  }
+  const last = dayjs(lastActiveTime);
+  if (!last.isValid()) {
+    return { text: '未知', type: 'info' };
+  }
+  const diffDays = dayjs().startOf('day').diff(last.startOf('day'), 'day');
+  if (diffDays === 0) {
+    return { text: '今日活跃', type: 'success' };
+  }
+  if (diffDays === 1) {
+    return { text: '昨日活跃', type: 'warning' };
+  }
+  if (diffDays <= 7) {
+    return { text: `${diffDays}天前活跃`, type: 'warning' };
+  }
+  return { text: '超过7天未活跃', type: 'danger' };
+};
 
 const captureSnapshot = (source) => ({
   id: source.id,
