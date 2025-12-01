@@ -313,10 +313,14 @@ const selectedClassLabel = computed(() => {
 async function fetchPaperList() {
   paperLoading.value = true
   try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key')
+    
     const response = await getExamPaperList({
       pageIndex: paperPagination.current,
       pageSize: paperPagination.size,
-      paperName: paperSearchKeyword.value || undefined
+      paperName: paperSearchKeyword.value || undefined,
+      creatorKey: userKey || '' // 只查询当前教师创建的试卷
     })
     if (response.success) {
       paperList.value = response.data?.records || []

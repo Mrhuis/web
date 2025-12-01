@@ -198,9 +198,13 @@ const questionRules = {
 // 获取试卷选项
 const fetchPaperOptions = async () => {
   try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
     const response = await getExamPaperList({
       pageIndex: 1,
-      pageSize: 1000
+      pageSize: 1000,
+      creatorKey: userKey || '' // 只查询当前教师创建的试卷
     });
     
     if (response.success && response.data) {
@@ -264,11 +268,15 @@ const handleItemSelectFocus = () => {
 const fetchQuestionList = async () => {
   loading.value = true;
   try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
     const response = await getExamPaperQuestionList({
       pageIndex: pagination.current,
       pageSize: pagination.size,
       paperId: selectedPaperId.value || undefined,
-      itemKey: searchKeyword.value || undefined
+      itemKey: searchKeyword.value || undefined,
+      creatorKey: userKey || '' // 只查询当前教师创建的试卷的题目
     });
     
     if (response.success) {

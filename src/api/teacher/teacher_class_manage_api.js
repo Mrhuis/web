@@ -7,6 +7,7 @@ import request from '@/utils/request';
  * @param {number} [params.pageSize=10] - 每页数量
  * @param {string} [params.classKey] - 班级业务唯一标识
  * @param {string} [params.name] - 班级名称
+ * @param {string} [params.creatorKey] - 创建者标识（创建班级的教师user_key）
  * @returns {Promise<Result<QueryListVo<Class>>>}
  */
 export function getClassList(params) {
@@ -23,6 +24,7 @@ export function getClassList(params) {
  * @param {string} payload.classKey - 班级业务唯一标识（如C2024_01）
  * @param {string} payload.name - 班级名称（如"高一（3）班"）
  * @param {string} payload.inviteCode - 班级加入邀请码（唯一）
+ * @param {string} payload.creatorKey - 创建者标识（创建班级的教师user_key）
  * @returns {Promise<Result>}
  */
 export function addClass(payload) {

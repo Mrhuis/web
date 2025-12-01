@@ -38,6 +38,7 @@
       </el-table-column>
       <el-table-column prop="totalScore" label="总分" width="100" />
       <el-table-column prop="timeLimit" label="时长(分钟)" width="120" />
+      <el-table-column prop="creatorKey" label="创建者标识" width="150" />
       <el-table-column prop="createTime" label="创建时间" width="180" />
       <el-table-column label="操作" width="280" fixed="right">
         <template #default="scope">
@@ -199,10 +200,14 @@ const paperRules = {
 const fetchPaperList = async () => {
   loading.value = true;
   try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
     const response = await getExamPaperList({
       pageIndex: pagination.current,
       pageSize: pagination.size,
-      paperName: searchKeyword.value || undefined
+      paperName: searchKeyword.value || undefined,
+      creatorKey: userKey || '' // 默认传递创建者标识，只查询当前教师创建的试卷
     });
     
     if (response.success) {
@@ -353,8 +358,10 @@ const handleSubmit = async () => {
           data = { id: currentPaperId.value, ...paperForm };
         } else {
           // 添加时排除 isEnabled 字段（后端会默认设置为启用）
+          // 从localStorage获取user_key作为创建者标识
+          const userKey = localStorage.getItem('user_key');
           const { isEnabled, ...addData } = paperForm;
-          data = { ...addData, createUserId: userStore.id };
+          data = { ...addData, creatorKey: userKey || '' };
         }
         
         const response = isEdit.value

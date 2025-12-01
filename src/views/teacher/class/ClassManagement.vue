@@ -30,6 +30,7 @@
       <el-table-column prop="classKey" label="班级标识" width="150" />
       <el-table-column prop="name" label="班级名称" min-width="200" />
       <el-table-column prop="inviteCode" label="邀请码" width="150" />
+      <el-table-column prop="creatorKey" label="创建者标识" width="150" />
       <el-table-column prop="createdAt" label="创建时间" width="180">
         <template #default="scope">
           {{ formatDateTime(scope.row.createdAt) }}
@@ -169,9 +170,13 @@ const formatDateTime = (dateTime) => {
 const fetchClassList = async () => {
   loading.value = true;
   try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
     const params = {
       pageIndex: pagination.current,
-      pageSize: pagination.size
+      pageSize: pagination.size,
+      creatorKey: userKey || '' // 默认传递创建者标识
     };
     
     // 如果有搜索关键词，添加到查询条件
@@ -304,6 +309,9 @@ const handleSubmit = async () => {
   await classFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
+        // 从localStorage获取user_key作为创建者标识
+        const userKey = localStorage.getItem('user_key');
+        
         let response;
         if (isEdit.value) {
           response = await updateClass({
@@ -311,7 +319,11 @@ const handleSubmit = async () => {
             ...classForm
           });
         } else {
-          response = await addClass(classForm);
+          // 创建班级时传递创建者标识
+          response = await addClass({
+            ...classForm,
+            creatorKey: userKey || ''
+          });
         }
         
         if (response.success) {

@@ -321,7 +321,13 @@ const buildQueryParams = () => {
 const fetchDistributionList = async () => {
   loading.value = true;
   try {
-    const response = await getExamPaperDistributionList(buildQueryParams());
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
+    const params = buildQueryParams();
+    params.creatorKey = userKey || ''; // 只查询当前教师创建的试卷的发布记录
+    
+    const response = await getExamPaperDistributionList(params);
     if (response.success) {
       distributionList.value = response.data.records || [];
       pagination.total = response.data.total || 0;
@@ -372,11 +378,15 @@ const ensurePaperOptionExists = (paperId, label) => {
 const fetchPaperOptions = async (keyword = '') => {
   paperLoading.value = true;
   try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
     const response = await getExamPaperList({
       pageIndex: 1,
       pageSize: 50,
       isEnabled: 1,
-      paperName: keyword || undefined
+      paperName: keyword || undefined,
+      creatorKey: userKey || '' // 只查询当前教师创建的试卷
     });
     if (response.success) {
       paperOptions.value = (response.data.records || []).map(mapPaperOption);

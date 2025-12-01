@@ -9,6 +9,7 @@ import request from '@/utils/request';
  * @param {string} queryParams.subject - 科目
  * @param {number} queryParams.difficulty - 难度等级
  * @param {number} queryParams.isEnabled - 是否启用
+ * @param {string} queryParams.creatorKey - 创建者标识（创建试卷的教师user_key）
  * @returns {Promise} 试卷列表数据
  */
 export function getExamPaperList(queryParams = {}) {
@@ -27,7 +28,7 @@ export function getExamPaperList(queryParams = {}) {
  * @param {number} paperData.difficulty - 难度等级（1-简单，2-中等，3-困难）
  * @param {number} paperData.totalScore - 试卷总分
  * @param {number} paperData.timeLimit - 考试时长（分钟）
- * @param {number} paperData.createUserId - 创建人ID
+ * @param {string} paperData.creatorKey - 创建者标识（创建试卷的教师user_key）
  * @returns {Promise} 添加结果
  */
 export function addExamPaper(paperData) {

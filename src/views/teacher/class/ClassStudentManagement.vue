@@ -5,18 +5,23 @@
         <el-icon><Plus /></el-icon>
         添加学生
       </el-button>
-      <el-input
-        v-model="searchForm.classKey"
-        placeholder="搜索班级标识"
-        style="width: 200px; margin-left: 16px;"
+      <el-select
+        v-model="selectedClassKey"
+        placeholder="请选择班级"
+        style="width: 300px; margin-left: 16px;"
         clearable
-        @clear="handleSearch"
-        @keyup.enter="handleSearch"
+        filterable
+        @change="handleClassChange"
+        @focus="loadTeacherClasses"
+        :loading="classLoading"
       >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
+        <el-option
+          v-for="item in teacherClassOptions"
+          :key="item.classKey"
+          :label="`${item.name} (${item.classKey})`"
+          :value="item.classKey"
+        />
+      </el-select>
       <el-input
         v-model="searchForm.userKey"
         placeholder="搜索学生标识"
@@ -43,11 +48,24 @@
       <el-button type="default" @click="handleReset" style="margin-left: 8px;">重置</el-button>
     </div>
 
+    <!-- 提示信息 -->
+    <el-alert
+      v-if="!selectedClassKey"
+      type="info"
+      :closable="false"
+      style="margin-top: 16px;"
+    >
+      <template #default>
+        <span>请先选择一个班级，查看该班级的学生信息</span>
+      </template>
+    </el-alert>
+
     <el-table
       :data="enrollmentList"
       v-loading="loading"
       style="width: 100%; margin-top: 16px;"
       border
+      v-if="selectedClassKey"
     >
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="classKey" label="班级标识" width="150" />
@@ -93,6 +111,7 @@
     </el-table>
 
     <el-pagination
+      v-if="selectedClassKey"
       v-model:current-page="pagination.current"
       v-model:page-size="pagination.size"
       :total="pagination.total"
@@ -191,6 +210,8 @@ const classOptions = ref([]);
 const classLoading = ref(false);
 const studentOptions = ref([]);
 const studentLoading = ref(false);
+const teacherClassOptions = ref([]); // 当前教师创建的班级列表
+const selectedClassKey = ref(''); // 当前选中的班级
 
 const pagination = reactive({
   current: 1,
@@ -240,15 +261,44 @@ const formatDateTime = (dateTime) => {
   });
 };
 
-// 加载班级选项
+// 加载当前教师创建的班级列表（用于顶部选择器）
+const loadTeacherClasses = async () => {
+  if (teacherClassOptions.value.length > 0) return; // 已加载过，不再重复加载
+  
+  classLoading.value = true;
+  try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
+    const response = await getClassList({
+      pageIndex: 1,
+      pageSize: 100,
+      creatorKey: userKey || '' // 只查询当前教师创建的班级
+    });
+    
+    if (response.success && response.data) {
+      teacherClassOptions.value = response.data.records || [];
+    }
+  } catch (error) {
+    console.error('加载教师班级列表失败:', error);
+  } finally {
+    classLoading.value = false;
+  }
+};
+
+// 加载班级选项（用于对话框中的选择）
 const loadClassOptions = async () => {
   if (classOptions.value.length > 0) return; // 已加载过，不再重复加载
   
   classLoading.value = true;
   try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
     const response = await getClassList({
       pageIndex: 1,
-      pageSize: 100
+      pageSize: 100,
+      creatorKey: userKey || '' // 只查询当前教师创建的班级
     });
     
     if (response.success && response.data) {
@@ -270,10 +320,14 @@ const searchClasses = async (query) => {
   
   classLoading.value = true;
   try {
+    // 从localStorage获取user_key作为创建者标识
+    const userKey = localStorage.getItem('user_key');
+    
     const response = await getClassList({
       pageIndex: 1,
       pageSize: 100,
-      name: query
+      name: query,
+      creatorKey: userKey || '' // 只查询当前教师创建的班级
     });
     
     if (response.success && response.data) {
@@ -352,14 +406,17 @@ const fetchEnrollmentList = async () => {
       pageSize: pagination.size
     };
     
-    // 添加搜索条件
-    if (searchForm.classKey) {
+    // 如果选择了班级，优先使用选择的班级
+    if (selectedClassKey.value) {
+      params.classKey = selectedClassKey.value;
+    } else if (searchForm.classKey) {
       params.classKey = searchForm.classKey;
     }
+    
     if (searchForm.userKey) {
       params.userKey = searchForm.userKey;
     }
-    if (searchForm.status) {
+    if (searchForm.status !== '' && searchForm.status !== null && searchForm.status !== undefined) {
       params.status = searchForm.status;
     }
     
@@ -385,8 +442,20 @@ const handleSearch = () => {
   fetchEnrollmentList();
 };
 
+// 班级选择改变
+const handleClassChange = (classKey) => {
+  selectedClassKey.value = classKey;
+  // 清空其他搜索条件
+  searchForm.classKey = '';
+  searchForm.userKey = '';
+  searchForm.status = '';
+  pagination.current = 1;
+  fetchEnrollmentList();
+};
+
 // 重置搜索
 const handleReset = () => {
+  selectedClassKey.value = '';
   Object.assign(searchForm, {
     classKey: '',
     userKey: '',
@@ -566,7 +635,10 @@ const handleSubmit = async () => {
 
 // 初始化
 onMounted(() => {
-  fetchEnrollmentList();
+  // 加载教师创建的班级列表
+  loadTeacherClasses();
+  // 初始不加载学生列表，等待用户选择班级
+  // fetchEnrollmentList();
 });
 </script>
 
