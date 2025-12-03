@@ -45,10 +45,20 @@
               size="small"
               type="primary"
               plain
+              :disabled="!row.canGrade"
               @click.stop="handlePaperSelect(row)"
             >
               进入批阅
             </el-button>
+            <el-tooltip
+              v-if="!row.canGrade"
+              content="当前时间未超过试卷发布的截止时间，无法进行批阅"
+              placement="top"
+            >
+              <el-icon class="info-icon" style="margin-left: 8px; color: #909399;">
+                <InfoFilled />
+              </el-icon>
+            </el-tooltip>
           </template>
         </el-table-column>
       </el-table>
@@ -221,7 +231,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Search, InfoFilled } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import { processImagePaths } from '@/utils/imageUtils'
 import {
@@ -432,6 +442,10 @@ async function fetchQuestionDetails(paperId, userKey) {
 }
 
 function handlePaperSelect(row) {
+  if (!row.canGrade) {
+    ElMessage.warning('当前时间未超过试卷发布的截止时间，无法进行批阅')
+    return
+  }
   selectedPaperId.value = row.id
   selectedPaper.value = row
 }

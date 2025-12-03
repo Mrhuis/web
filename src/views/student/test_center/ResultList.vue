@@ -31,7 +31,11 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="questionCount" label="题目数" width="100" />
+        <el-table-column prop="questionCount" label="题目数" width="100">
+          <template #default="{ row }">
+            {{ row.questionCount ?? '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="完成时间" min-width="160">
           <template #default="{ row }">
             {{ formatDateTime(row.completeTime) }}
@@ -40,13 +44,21 @@
         <el-table-column label="评分状态" width="120">
           <template #default="{ row }">
             <el-tag :type="row.graded ? 'success' : 'warning'">
-              {{ row.graded ? '已评分' : '待评分' }}
+              {{ row.canViewDetail === false ? '未评分' : (row.graded ? '已评分' : '待评分') }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="140" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link @click="viewDetail(row)">查看详情</el-button>
+            <el-button 
+              v-if="row.canViewDetail !== false" 
+              type="primary" 
+              link 
+              @click="viewDetail(row)"
+            >
+              查看详情
+            </el-button>
+            <span v-else class="disabled-text">-</span>
           </template>
         </el-table-column>
       </el-table>
@@ -220,6 +232,10 @@ function formatScore(score) {
   display: flex;
   justify-content: flex-end;
   padding: 16px;
+}
+
+.disabled-text {
+  color: #c0c4cc;
 }
 </style>
 
