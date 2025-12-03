@@ -7,6 +7,9 @@
           <p class="page-subtitle">查看与更新您的学生账号资料</p>
         </div>
         <div class="header-actions">
+          <el-button type="info" @click="handleViewKnowledgeStats">
+            知识点正确率
+          </el-button>
           <el-button type="success" @click="handleJoinClass">
             加入班级
           </el-button>
@@ -213,11 +216,43 @@
         <el-button type="primary" :loading="joiningClass" @click="handleJoinClassSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 个人知识点正确率弹窗 -->
+    <el-dialog
+      v-model="knowledgeStatsDialogVisible"
+      title="个人知识点正确率"
+      width="820px"
+      append-to-body
+      class="knowledge-stats-dialog"
+    >
+      <div class="knowledge-stats-chart" id="studentKnowledgeStatsChart"></div>
+
+      <div class="knowledge-stats-table-wrapper">
+        <el-table
+          :data="knowledgeStatsList"
+          v-loading="knowledgeStatsLoading"
+          border
+          style="width: 100%;"
+        >
+          <el-table-column prop="knowledgeName" label="知识点名称" min-width="220" />
+          <el-table-column prop="knowledgeKey" label="知识点标识" min-width="200" />
+          <el-table-column prop="correctCount" label="答对次数" width="120" />
+          <el-table-column prop="totalCount" label="作答次数" width="120" />
+          <el-table-column label="正确率" width="120">
+            <template #default="scope">
+              <span>
+                {{ scope.row.totalCount > 0 ? `${scope.row.accuracy?.toFixed ? scope.row.accuracy.toFixed(2) : scope.row.accuracy}%` : '-' }}
+              </span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-dialog>
   </StudentLayout>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, nextTick } from 'vue';
 import dayjs from 'dayjs';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { RefreshRight } from '@element-plus/icons-vue';
@@ -226,6 +261,8 @@ import { useUserStore } from '@/store/user';
 import { getTeacherProfile, updateTeacherProfile } from '@/api/teacher/teacher_profile_api';
 import { getStudentClasses, getClassInfoByKey, getClassStudents, joinClassByInviteCode, leaveClass } from '@/api/student/student_class_api';
 import { getUserBasicInfo } from '@/api/admin/admin_user_manage_api';
+import * as echarts from 'echarts';
+import { getUserKnowledgeAccuracy } from '@/api/teacher/teacher_class_manage_api';
 
 const userStore = useUserStore();
 const loading = ref(false);
@@ -268,6 +305,12 @@ const profileForm = reactive({
   continuousActiveDays: 0,
   password: ''
 });
+
+// 知识点正确率相关
+const knowledgeStatsDialogVisible = ref(false);
+const knowledgeStatsLoading = ref(false);
+const knowledgeStatsList = ref([]);
+let knowledgeStatsChartInstance = null;
 
 const roleTagMap = {
   teacher: { text: '教师', type: 'primary' },
@@ -321,6 +364,92 @@ const getActivityStatus = (lastActiveTime) => {
     return { text: `${diffDays}天前活跃`, type: 'warning' };
   }
   return { text: '超过7天未活跃', type: 'danger' };
+};
+
+// 查看个人知识点正确率
+const handleViewKnowledgeStats = async () => {
+  const userKey = userStore.userKey || localStorage.getItem('user_key');
+  if (!userKey) {
+    ElMessage.error('无法获取当前用户标识');
+    return;
+  }
+  knowledgeStatsDialogVisible.value = true;
+  knowledgeStatsLoading.value = true;
+  try {
+    const resp = await getUserKnowledgeAccuracy(userKey);
+    if (resp.success) {
+      knowledgeStatsList.value = resp.data || [];
+      await nextTick();
+      renderKnowledgeStatsChart();
+    } else {
+      ElMessage.error(resp.message || '获取知识点正确率失败');
+    }
+  } catch (error) {
+    console.error('获取知识点正确率失败:', error);
+    ElMessage.error('获取知识点正确率失败');
+  } finally {
+    knowledgeStatsLoading.value = false;
+  }
+};
+
+// 渲染知识点正确率图表
+const renderKnowledgeStatsChart = () => {
+  const dom = document.getElementById('studentKnowledgeStatsChart');
+  if (!dom) return;
+
+  if (!knowledgeStatsChartInstance) {
+    knowledgeStatsChartInstance = echarts.init(dom);
+  }
+
+  const names = knowledgeStatsList.value.map(item => item.knowledgeName || item.knowledgeKey);
+  const accuracies = knowledgeStatsList.value.map(item => item.accuracy || 0);
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const p = params[0];
+        const item = knowledgeStatsList.value[p.dataIndex];
+        return `${p.name}<br/>正确率：${(item.accuracy || 0).toFixed(2)}%<br/>` +
+               `答对次数：${item.correctCount} / 作答次数：${item.totalCount}`;
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '8%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: names,
+      axisLabel: {
+        interval: 0,
+        rotate: 30,
+        fontSize: 10
+      }
+    },
+    yAxis: {
+      type: 'value',
+      name: '正确率(%)',
+      min: 0,
+      max: 100
+    },
+    series: [
+      {
+        name: '正确率',
+        type: 'bar',
+        data: accuracies,
+        itemStyle: {
+          color: '#409EFF'
+        },
+        barMaxWidth: 32
+      }
+    ]
+  };
+
+  knowledgeStatsChartInstance.setOption(option);
 };
 
 const captureSnapshot = (source) => ({
@@ -747,6 +876,17 @@ onMounted(() => {
 .students-table-container {
   max-height: 300px;
   overflow: hidden;
+}
+
+.knowledge-stats-dialog .knowledge-stats-chart {
+  width: 100%;
+  height: 260px;
+  margin-bottom: 16px;
+}
+
+.knowledge-stats-dialog .knowledge-stats-table-wrapper {
+  max-height: 360px;
+  overflow-y: auto;
 }
 
 .class-info-header {

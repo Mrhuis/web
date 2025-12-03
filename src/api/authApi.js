@@ -28,6 +28,10 @@ export async function login(username, password) {
         if (response.status === 401) {
             throw new Error('用户名或密码错误');
         }
+        if (response.status === 403) {
+            // 账号存在但已被禁用
+            throw new Error('账户已被禁用');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
     }
     
@@ -50,4 +54,40 @@ export async function login(username, password) {
     }
     
     return userData;
+}
+
+/**
+ * 轮询检查当前登录用户状态
+ * 根据本地 user_key 调用后端接口：
+ * - 200 + enabled -> 正常
+ * - 403 / disabled -> 账号被禁用
+ * - 404 / not_found -> 用户不存在
+ */
+export async function checkUserStatus() {
+    let userKey = null;
+    try {
+        userKey = localStorage.getItem('user_key');
+    } catch (e) {
+        console.error('读取本地 user_key 失败:', e);
+        return 'unknown';
+    }
+
+    if (!userKey) {
+        return 'no_user';
+    }
+
+    const resp = await fetch(`${API_BASE_URL}/auth/status/${userKey}`, {
+        method: 'GET'
+    });
+
+    if (resp.status === 200) {
+        return 'enabled';
+    }
+    if (resp.status === 403) {
+        return 'disabled';
+    }
+    if (resp.status === 404) {
+        return 'not_found';
+    }
+    return 'unknown';
 }

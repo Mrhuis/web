@@ -734,10 +734,13 @@ export function updateVideo(video) {
  * @param {string} status - 视频状态
  * @returns {Promise} 更新结果
  */
-export function updateVideoStatus(id, status) {
+export function updateVideoStatus(id, status, reviewerKey) {
   const formData = new FormData();
   formData.append('id', id);
   formData.append('status', status);
+  if (reviewerKey) {
+    formData.append('reviewerKey', reviewerKey);
+  }
   
   return request({
     url: '/admin/lamedia/updateStatus',

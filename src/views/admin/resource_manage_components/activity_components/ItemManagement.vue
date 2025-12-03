@@ -818,11 +818,21 @@ const deleteItem = async (row) => {
   }
 };
 
+// 获取当前管理员 user_key
+const getReviewerKey = () => {
+  if (typeof window === 'undefined') return '';
+  try {
+    return localStorage.getItem('user_key') || '';
+  } catch {
+    return '';
+  }
+};
+
 // 审核通过习题
 const approveItem = async (row) => {
   try {
     await ElMessageBox.confirm("确定要审核通过该习题吗？", "提示", { type: "info" });
-    await updateItemStatus({ id: row.id, status: "ENABLED" });
+    await updateItemStatus({ id: row.id, status: "ENABLED", reviewerKey: getReviewerKey() });
     ElMessage.success("审核通过成功");
     fetchItems();
   } catch (error) {
@@ -837,7 +847,7 @@ const approveItem = async (row) => {
 const rejectItem = async (row) => {
   try {
     await ElMessageBox.confirm("确定要拒绝该习题吗？", "提示", { type: "warning" });
-    await updateItemStatus({ id: row.id, status: "REJECTED" });
+    await updateItemStatus({ id: row.id, status: "REJECTED", reviewerKey: getReviewerKey() });
     ElMessage.success("拒绝成功");
     fetchItems();
   } catch (error) {
@@ -852,7 +862,7 @@ const rejectItem = async (row) => {
 const enableItem = async (row) => {
   try {
     await ElMessageBox.confirm("确定要启用该习题吗？", "提示", { type: "info" });
-    await updateItemStatus({ id: row.id, status: "ENABLED" });
+    await updateItemStatus({ id: row.id, status: "ENABLED", reviewerKey: getReviewerKey() });
     ElMessage.success("启用成功");
     fetchItems();
   } catch (error) {
@@ -867,7 +877,7 @@ const enableItem = async (row) => {
 const disableItem = async (row) => {
   try {
     await ElMessageBox.confirm("确定要禁用该习题吗？", "提示", { type: "warning" });
-    await updateItemStatus({ id: row.id, status: "DISABLED" });
+    await updateItemStatus({ id: row.id, status: "DISABLED", reviewerKey: getReviewerKey() });
     ElMessage.success("禁用成功");
     fetchItems();
   } catch (error) {

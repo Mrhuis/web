@@ -65,6 +65,48 @@
       @current-change="handleCurrentChange"
     />
 
+    <!-- 查看题目详情对话框 -->
+    <el-dialog
+      v-model="viewDialogVisible"
+      title="题目详情"
+      width="800px"
+      append-to-body
+    >
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="所属试卷">
+          {{ viewQuestion.paperTitle || '未知试卷' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="题目标识">
+          {{ viewQuestion.itemKey || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="排序">
+          {{ viewQuestion.sortNum }}
+        </el-descriptions-item>
+        <el-descriptions-item label="分值">
+          {{ viewQuestion.actualScore }}
+        </el-descriptions-item>
+      </el-descriptions>
+      <div v-if="viewQuestion.content" class="question-content">
+        <el-divider>题干</el-divider>
+        <div class="rich-text" v-html="viewQuestion.content" />
+      </div>
+      <div v-if="viewQuestion.options" class="question-content">
+        <el-divider>选项</el-divider>
+        <div class="rich-text" v-html="viewQuestion.options" />
+      </div>
+      <div v-if="viewQuestion.answer" class="question-content">
+        <el-divider>答案</el-divider>
+        <div class="rich-text" v-html="viewQuestion.answer" />
+      </div>
+      <div v-if="viewQuestion.solution" class="question-content">
+        <el-divider>解析</el-divider>
+        <div class="rich-text" v-html="viewQuestion.solution" />
+      </div>
+      <template #footer>
+        <el-button type="primary" @click="viewDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 创建/编辑题目对话框 -->
     <el-dialog
       v-model="dialogVisible"
@@ -152,6 +194,7 @@ import {
   getExamPaperQuestionDetail,
   getItemList
 } from '@/api/teacher/teacher_test_manage/teacher_test_manage_api';
+import { processImagePaths } from '@/utils/imageUtils';
 
 const loading = ref(false);
 const searchKeyword = ref('');
@@ -166,6 +209,36 @@ const dialogTitle = ref('添加题目');
 const questionFormRef = ref(null);
 const isEdit = ref(false);
 const currentQuestionId = ref(null);
+const viewDialogVisible = ref(false);
+const viewQuestion = reactive({
+  paperTitle: '',
+  paperId: null,
+  itemKey: '',
+  sortNum: null,
+  actualScore: null,
+  formKey: '',
+  difficulty: null,
+  content: '',
+  options: '',
+  answer: '',
+  solution: ''
+});
+
+// 将题目内容中的图片路径和Markdown图片语法转换为可直接展示的HTML
+const formatRichText = (content) => {
+  if (!content) return '';
+  // 先处理图片路径（相对路径 -> 后端静态资源URL）
+  let processed = processImagePaths(content);
+  // 再把 Markdown 图片语法转换为 <img> 标签
+  const mdImgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  processed = processed.replace(mdImgRegex, (_match, alt, src) => {
+    const safeAlt = alt || '';
+    return `<img src="${src}" alt="${safeAlt}" style="max-width:100%; height:auto;" />`;
+  });
+  // 简单处理换行
+  processed = processed.replace(/\n/g, '<br/>');
+  return processed;
+};
 
 const pagination = reactive({
   current: 1,
@@ -266,6 +339,13 @@ const handleItemSelectFocus = () => {
 
 // 获取题目列表
 const fetchQuestionList = async () => {
+  // 如果还没有选择试卷，则不展示任何题目
+  if (!selectedPaperId.value) {
+    questionList.value = [];
+    pagination.total = 0;
+    return;
+  }
+
   loading.value = true;
   try {
     // 从localStorage获取user_key作为创建者标识
@@ -274,7 +354,7 @@ const fetchQuestionList = async () => {
     const response = await getExamPaperQuestionList({
       pageIndex: pagination.current,
       pageSize: pagination.size,
-      paperId: selectedPaperId.value || undefined,
+      paperId: selectedPaperId.value, // 要求必须选择试卷
       itemKey: searchKeyword.value || undefined,
       creatorKey: userKey || '' // 只查询当前教师创建的试卷的题目
     });
@@ -335,9 +415,64 @@ const handleAddQuestion = () => {
 };
 
 // 查看题目
-const handleView = (row) => {
-  // TODO: 实现查看题目详情
-  ElMessage.info('查看功能待实现');
+const handleView = async (row) => {
+  try {
+    const response = await getExamPaperQuestionDetail(row.id);
+
+    if (response.success && response.data) {
+      const data = response.data;
+      const paperTitle =
+        paperOptions.value.find((p) => p.id === data.paperId)?.paperName ||
+        row.paperTitle ||
+        '未知试卷';
+
+      Object.assign(viewQuestion, {
+        paperTitle,
+        paperId: data.paperId,
+        itemKey: data.itemKey,
+        sortNum: data.sortNum,
+        actualScore: data.actualScore,
+        formKey: '',
+        difficulty: null,
+        content: '',
+        options: '',
+        answer: '',
+        solution: ''
+      });
+
+      // 根据 itemKey 查询习题详情（题干、选项、答案等）
+      if (data.itemKey) {
+        try {
+          const itemResp = await getItemList({
+            pageIndex: 1,
+            pageSize: 1,
+            itemKey: data.itemKey
+          });
+
+          if (itemResp.success && itemResp.data && itemResp.data.records && itemResp.data.records.length > 0) {
+            const item = itemResp.data.records[0];
+            Object.assign(viewQuestion, {
+              formKey: item.formKey || '',
+              difficulty: item.difficulty ?? null,
+              content: formatRichText(item.content || ''),
+              options: formatRichText(item.options || ''),
+              answer: formatRichText(item.answer || ''),
+              solution: formatRichText(item.solution || '')
+            });
+          }
+        } catch (e) {
+          console.error('获取习题详情失败:', e);
+        }
+      }
+
+      viewDialogVisible.value = true;
+    } else {
+      ElMessage.error(response.message || '获取题目详情失败');
+    }
+  } catch (error) {
+    console.error('获取题目详情失败:', error);
+    ElMessage.error('获取题目详情失败');
+  }
 };
 
 // 编辑题目
@@ -451,7 +586,6 @@ const handleDialogClose = () => {
 
 onMounted(async () => {
   await fetchPaperOptions();
-  fetchQuestionList();
 });
 </script>
 

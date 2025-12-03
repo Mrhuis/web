@@ -624,11 +624,21 @@ const rejectVideo = async (row) => {
   }
 };
 
+// 获取当前管理员 user_key
+const getReviewerKey = () => {
+  if (typeof window === 'undefined') return '';
+  try {
+    return localStorage.getItem('user_key') || '';
+  } catch {
+    return '';
+  }
+};
+
 // 禁用视频（启用 -> 禁用）
 const disableVideo = async (row) => {
   try {
     await ElMessageBox.confirm('确定要禁用该视频吗？', '提示', { type: 'warning' });
-    await updateVideoStatus(row.id, 'DISABLED');
+    await updateVideoStatus(row.id, 'DISABLED', getReviewerKey());
     ElMessage.success('禁用成功');
     fetchVideos();
   } catch (error) {
@@ -643,7 +653,7 @@ const disableVideo = async (row) => {
 const enableVideo = async (row) => {
   try {
     await ElMessageBox.confirm('确定要启用该视频吗？', '提示', { type: 'info' });
-    await updateVideoStatus(row.id, 'ENABLED');
+    await updateVideoStatus(row.id, 'ENABLED', getReviewerKey());
     ElMessage.success('启用成功');
     fetchVideos();
   } catch (error) {
