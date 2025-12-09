@@ -225,7 +225,8 @@ const fetchTags = async () => {
       page_size: pageSize.value,
       search_value: searchValue.value,
       key: tagKey.value,
-      name: tagName.value
+      name: tagName.value,
+      userKey: currentUserKey.value
     };
     const res = await getTeacherTagList(params);
     if (res.success) {

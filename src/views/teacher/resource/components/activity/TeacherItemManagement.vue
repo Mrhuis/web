@@ -439,7 +439,8 @@ const fetchItems = async () => {
       page_size: pageSize.value,
       search_value: searchValue.value,
       itemKey: itemKey.value,
-      content: contentKeyword.value
+      content: contentKeyword.value,
+      userKey: currentUserKey.value
     };
     const res = await getTeacherItemList(params);
     if (res.success) {
@@ -460,7 +461,7 @@ const loadOption = async (type) => {
   optionLoading.value[type] = true;
   try {
     if (type === 'chapter') {
-      const res = await getTeacherChapterList({ page_index: 1, page_size: 500 });
+      const res = await getTeacherChapterList({ page_index: 1, page_size: 500, userKey: currentUserKey.value });
       if (res.success) {
         const records = res.data?.records || [];
         chapterOptions.value = records.map((item) => ({
@@ -469,7 +470,7 @@ const loadOption = async (type) => {
         }));
       }
     } else if (type === 'knowledge') {
-      const res = await getTeacherKnowledgeList({ page_index: 1, page_size: 500 });
+      const res = await getTeacherKnowledgeList({ page_index: 1, page_size: 500, userKey: currentUserKey.value });
       if (res.success) {
         const records = res.data?.records || [];
         knowledgeOptions.value = records.map((item) => ({
@@ -478,7 +479,7 @@ const loadOption = async (type) => {
         }));
       }
     } else if (type === 'tag') {
-      const res = await getTeacherTagList({ page_index: 1, page_size: 500 });
+      const res = await getTeacherTagList({ page_index: 1, page_size: 500, userKey: currentUserKey.value });
       if (res.success) {
         const records = res.data?.records || [];
         tagOptions.value = records.map((tag) => ({
@@ -715,7 +716,8 @@ const fetchItemTypes = async () => {
     const res = await getTeacherResourceFormList({ 
       page_index: 1, 
       page_size: 1000, 
-      formType: "item" 
+      formType: "item",
+      userKey: currentUserKey.value
     });
     if (res.success) {
       const records = res.data?.records || [];

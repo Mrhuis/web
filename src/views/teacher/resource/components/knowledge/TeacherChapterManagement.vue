@@ -257,7 +257,8 @@ const fetchChapters = async () => {
       page_size: pageSize.value,
       search_value: searchValue.value,
       key: chapterKey.value,
-      name: chapterName.value
+      name: chapterName.value,
+      userKey: currentUserKey.value
     };
     const res = await getTeacherChapterList(params);
     if (res.success) {
@@ -278,7 +279,8 @@ const fetchParentOptions = async () => {
     parentLoading.value = true;
     const res = await getTeacherChapterList({
       page_index: 1,
-      page_size: 500
+      page_size: 500,
+      userKey: currentUserKey.value
     });
     if (res.success) {
       const records = res.data?.records || [];

@@ -20,7 +20,6 @@
           <el-button type="primary" @click="submitExam" :disabled="submitting">
             {{ submitting ? '提交中...' : '提交试卷' }}
           </el-button>
-          <el-button @click="goBack">返回列表</el-button>
         </div>
       </div>
 
@@ -65,9 +64,6 @@
         <el-button @click="prevQuestion" :disabled="currentQuestionIndex === 0">
           上一题
         </el-button>
-        <el-button type="primary" @click="saveAllAnswers">
-          保存全部答案
-        </el-button>
         <el-button @click="nextQuestion" :disabled="currentQuestionIndex === questions.length - 1">
           下一题
         </el-button>
@@ -106,6 +102,7 @@ const timerStatus = ref('idle')
 const timerMeta = ref(null)
 const autoSubmitTriggered = ref(false)
 let countdownTimer = null
+let recycleCheckTimer = null
 
 const answeredCount = computed(() => {
   return Object.values(answers.value).filter(answer => answer && answer.trim() !== '').length
@@ -140,11 +137,14 @@ onMounted(async () => {
   const available = await ensureExamAvailable()
   if (available) {
     loadExamPaper()
+    // 启动试卷回收状态检查（每5分钟检查一次）
+    startRecycleCheck()
   }
 })
 
 onBeforeUnmount(() => {
   cleanupTimer()
+  cleanupRecycleCheckTimer()
 })
 
 /**
@@ -377,6 +377,16 @@ async function ensureExamAvailable() {
 
   try {
     loading.value = true
+    
+    // 检查试卷是否被回收
+    const recycleResponse = await testCenterApi.checkPaperRecycled(userStore.userKey, paperId.value)
+    if (recycleResponse.success !== false && recycleResponse.data === true) {
+      ElMessage.warning('该试卷已被回收，无法进入答题')
+      router.push('/student/test-center')
+      return false
+    }
+    
+    // 检查考试是否已完成
     const response = await testCenterApi.checkExamCompleted(userStore.userKey, paperId.value)
     if (response && response.success !== false) {
       examCompleted.value = parseExamCompletedFlag(response.data)
@@ -554,6 +564,52 @@ function formatDateTime(dateTime) {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+/**
+ * 启动试卷回收状态检查（每5分钟检查一次）
+ */
+function startRecycleCheck() {
+  if (!userStore.userKey || !paperId.value) return
+  
+  // 立即检查一次
+  checkPaperRecycledStatus()
+  
+  // 每5分钟（300000毫秒）检查一次
+  recycleCheckTimer = window.setInterval(() => {
+    checkPaperRecycledStatus()
+  }, 5 * 60 * 1000)
+}
+
+/**
+ * 检查试卷回收状态
+ */
+async function checkPaperRecycledStatus() {
+  if (!userStore.userKey || !paperId.value) return
+  
+  try {
+    const response = await testCenterApi.checkPaperRecycled(userStore.userKey, paperId.value)
+    if (response.success !== false && response.data === true) {
+      // 试卷已被回收，退出答题页面
+      ElMessage.warning('该试卷已被回收，无法继续作答')
+      cleanupRecycleCheckTimer()
+      cleanupTimer()
+      router.push('/student/test-center')
+    }
+  } catch (error) {
+    console.error('检查试卷回收状态失败:', error)
+    // 检查失败时不退出，避免误判
+  }
+}
+
+/**
+ * 清理试卷回收状态检查定时器
+ */
+function cleanupRecycleCheckTimer() {
+  if (recycleCheckTimer) {
+    clearInterval(recycleCheckTimer)
+    recycleCheckTimer = null
+  }
 }
 </script>
 

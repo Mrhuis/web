@@ -287,7 +287,8 @@ const fetchMedia = async () => {
       page_index: currentPage.value,
       page_size: pageSize.value,
       mediaKey: mediaKey.value,
-      fileName: fileName.value
+      fileName: fileName.value,
+      userKey: currentUserKey.value
     };
     const res = await getTeacherMediaList(params);
     if (res.success) {
@@ -462,19 +463,19 @@ const submitForm = () => {
 const fetchRelatedData = async () => {
   try {
     // 获取章节列表
-    const chapterRes = await getTeacherChapterList({ page_index: 1, page_size: 500 });
+    const chapterRes = await getTeacherChapterList({ page_index: 1, page_size: 500, userKey: currentUserKey.value });
     if (chapterRes.success) {
       availableChapters.value = chapterRes.data?.records || [];
     }
     
     // 获取知识点列表
-    const knowledgeRes = await getTeacherKnowledgeList({ page_index: 1, page_size: 500 });
+    const knowledgeRes = await getTeacherKnowledgeList({ page_index: 1, page_size: 500, userKey: currentUserKey.value });
     if (knowledgeRes.success) {
       availableKnowledge.value = knowledgeRes.data?.records || [];
     }
     
     // 获取标签列表
-    const tagRes = await getTeacherTagList({ page_index: 1, page_size: 500 });
+    const tagRes = await getTeacherTagList({ page_index: 1, page_size: 500, userKey: currentUserKey.value });
     if (tagRes.success) {
       availableTags.value = tagRes.data?.records || [];
     }

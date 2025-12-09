@@ -10,13 +10,13 @@
         />
         <el-input
           v-model="formKey"
-          placeholder="形式标识"
+          placeholder="类型标识"
           clearable
           class="filter-input"
         />
         <el-input
           v-model="formName"
-          placeholder="形式名称"
+          placeholder="类型名称"
           clearable
           class="filter-input"
         />
@@ -27,13 +27,13 @@
           重置
         </el-button>
         <el-button type="primary" @click="openDialog">
-          新增资源形式
+          新增资源类型
         </el-button>
       </div>
     </div>
 
     <el-table :data="resourceForms" border v-loading="loading">
-      <el-table-column label="形式标识" width="180">
+      <el-table-column label="类型标识" width="180">
         <template #default="scope">
           {{ getFormKey(scope.row) }}
         </template>
@@ -111,16 +111,16 @@
 
     <el-dialog
       v-model="showDialog"
-      title="新增资源形式"
+      title="新增资源类型"
       width="520px"
       :close-on-click-modal="false"
       append-to-body
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-form-item label="形式标识" prop="key">
+        <el-form-item label="类型标识" prop="key">
           <el-input v-model="form.key" placeholder="请输入唯一标识" />
         </el-form-item>
-        <el-form-item label="形式名称" prop="name">
+        <el-form-item label="类型名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入名称" />
         </el-form-item>
         <el-form-item label="资源类型" prop="formType">
@@ -146,7 +146,7 @@
 
     <el-dialog
       v-model="showDetailDialog"
-      title="资源形式详情"
+      title="资源类型详情"
       width="640px"
       :close-on-click-modal="false"
       append-to-body
@@ -157,13 +157,13 @@
         border
         class="detail-descriptions"
       >
-        <el-descriptions-item label="形式标识">
+        <el-descriptions-item label="类型标识">
           {{ getFormKey(detailRecord) }}
         </el-descriptions-item>
         <el-descriptions-item label="状态">
           {{ getStatusText(detailRecord.status) }}
         </el-descriptions-item>
-        <el-descriptions-item label="形式名称">
+        <el-descriptions-item label="类型名称">
           {{ detailRecord.name || detailRecord.formName || '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="资源类型">
@@ -229,8 +229,8 @@ const currentUserKey = computed(() => {
 });
 
 const rules = {
-  key: [{ required: true, message: '请输入形式标识', trigger: 'blur' }],
-  name: [{ required: true, message: '请输入形式名称', trigger: 'blur' }],
+  key: [{ required: true, message: '请输入类型标识', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入类型名称', trigger: 'blur' }],
   formType: [{ required: true, message: '请选择资源类型', trigger: 'change' }],
   description: [{ required: true, message: '请输入描述', trigger: 'blur' }]
 };
@@ -243,7 +243,8 @@ const fetchResourceForms = async () => {
       page_size: pageSize.value,
       search_value: searchValue.value,
       key: formKey.value,
-      name: formName.value
+      name: formName.value,
+      userKey: currentUserKey.value
     };
     const res = await getTeacherResourceFormList(params);
     if (res.success) {
@@ -253,7 +254,7 @@ const fetchResourceForms = async () => {
     }
   } catch (error) {
     console.error(error);
-    ElMessage.error('获取资源形式失败');
+    ElMessage.error('获取资源类型失败');
   } finally {
     loading.value = false;
   }
@@ -365,7 +366,7 @@ const submitForm = () => {
 
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定删除该资源形式吗？', '提示', { type: 'warning' });
+    await ElMessageBox.confirm('确定删除该资源类型吗？', '提示', { type: 'warning' });
     await deleteTeacherResourceForm(row.id);
     ElMessage.success('删除成功');
     fetchResourceForms();

@@ -229,7 +229,8 @@ const fetchKnowledge = async () => {
       page_size: pageSize.value,
       key: knowledgeKey.value,
       name: knowledgeName.value,
-      search_value: searchValue.value
+      search_value: searchValue.value,
+      userKey: currentUserKey.value
     };
     const res = await getTeacherKnowledgeList(params);
     if (res.success) {

@@ -47,20 +47,30 @@
                 <span class="remark-label">备注：</span>
                 <span class="remark-content">{{ paper.remark }}</span>
               </div>
+              <div class="paper-status" style="margin-top: 12px;">
+                <el-tag v-if="paper.isRecycled === 1" type="warning" size="small">
+                  已被回收
+                </el-tag>
+                <el-tag v-else type="success" size="small">
+                  正常
+                </el-tag>
+              </div>
             </div>
           </div>
           <div class="card-actions">
             <el-button
               type="primary"
               @click="startExam(paper)"
-              :disabled="isExpired(paper.deadline) || paper.completed"
+              :disabled="isExpired(paper.deadline) || paper.completed || paper.isRecycled === 1"
             >
               {{
-                isExpired(paper.deadline)
-                  ? '已过期'
-                  : paper.completed
-                    ? '已完成'
-                    : '开始答题'
+                paper.isRecycled === 1
+                  ? '已被回收'
+                  : isExpired(paper.deadline)
+                    ? '已过期'
+                    : paper.completed
+                      ? '已完成'
+                      : '开始答题'
               }}
             </el-button>
           </div>
@@ -114,6 +124,11 @@ async function loadExamPapers() {
 }
 
 async function startExam(paper) {
+  if (paper.isRecycled === 1) {
+    ElMessage.warning('该试卷已被回收，无法进入答题')
+    return
+  }
+
   if (isExpired(paper.deadline)) {
     ElMessage.warning('该考试已过期，无法进入答题')
     return

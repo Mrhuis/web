@@ -104,9 +104,8 @@
         </template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="200" show-overflow-tooltip />
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="scope">
-          <el-button size="small" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
           <el-button size="small" type="warning" @click="handleToggleRecycle(scope.row)">
             {{ scope.row.isRecycled === 1 ? '取消回收' : '回收' }}
           </el-button>

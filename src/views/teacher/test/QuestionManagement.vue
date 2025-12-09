@@ -43,6 +43,14 @@
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="paperTitle" label="所属试卷" min-width="200" />
       <el-table-column prop="itemKey" label="题目标识" width="120" />
+      <el-table-column label="题目内容" min-width="300" show-overflow-tooltip>
+        <template #default="scope">
+          <div v-if="scope.row.item && scope.row.item.content" class="question-content-preview">
+            {{ getContentPreview(scope.row.item.content) }}
+          </div>
+          <span v-else class="text-muted">-</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="sortNum" label="排序" width="100" />
       <el-table-column prop="actualScore" label="分值" width="100" />
       <el-table-column label="操作" width="250" fixed="right">
@@ -240,6 +248,25 @@ const formatRichText = (content) => {
   return processed;
 };
 
+// 获取题目内容预览（去除HTML标签，截断长文本）
+const getContentPreview = (content) => {
+  if (!content) return '';
+  // 去除HTML标签
+  let text = content.replace(/<[^>]*>/g, '');
+  // 去除Markdown语法标记
+  text = text.replace(/#{1,6}\s+/g, ''); // 标题
+  text = text.replace(/\*\*([^*]+)\*\*/g, '$1'); // 粗体
+  text = text.replace(/\*([^*]+)\*/g, '$1'); // 斜体
+  text = text.replace(/`([^`]+)`/g, '$1'); // 行内代码
+  text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // 链接
+  text = text.replace(/!\[([^\]]*)\]\([^)]+\)/g, ''); // 图片
+  // 截断长文本
+  if (text.length > 100) {
+    text = text.substring(0, 100) + '...';
+  }
+  return text.trim();
+};
+
 const pagination = reactive({
   current: 1,
   size: 10,
@@ -285,6 +312,7 @@ const fetchPaperOptions = async () => {
     }
   } catch (error) {
     console.error('获取试卷列表失败:', error);
+    ElMessage.error('获取试卷列表失败');
   }
 };
 
@@ -598,6 +626,17 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.question-content-preview {
+  color: #333;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.text-muted {
+  color: #909399;
+  font-size: 12px;
 }
 </style>
 

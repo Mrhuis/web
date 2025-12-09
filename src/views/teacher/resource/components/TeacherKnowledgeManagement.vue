@@ -10,7 +10,7 @@
       <el-tab-pane label="标签管理" name="tags">
         <TeacherTagManagement />
       </el-tab-pane>
-      <el-tab-pane label="资源形式管理" name="resource-forms">
+      <el-tab-pane label="资源类型管理" name="resource-forms">
         <TeacherResourceFormManagement />
       </el-tab-pane>
     </el-tabs>

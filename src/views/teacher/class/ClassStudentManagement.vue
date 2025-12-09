@@ -94,10 +94,10 @@
           </el-button>
           <el-button 
             size="small" 
-            type="primary" 
-            @click="handleEdit(scope.row)"
+            type="info" 
+            @click="handleViewDetail(scope.row)"
           >
-            编辑
+            详情
           </el-button>
           <el-button
             v-if="scope.row.status === 1"
@@ -189,6 +189,50 @@
       </template>
     </el-dialog>
 
+    <!-- 学生详情弹窗 -->
+    <el-dialog
+      v-model="studentDetailDialogVisible"
+      title="学生基本信息"
+      width="600px"
+      append-to-body
+    >
+      <div v-loading="studentDetailLoading">
+        <el-descriptions
+          v-if="studentDetail"
+          :column="2"
+          border
+          class="student-detail-descriptions"
+        >
+        <el-descriptions-item label="学生标识" :span="2">
+          {{ studentDetail.userKey || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="用户名">
+          {{ studentDetail.username || studentDetail.account || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="昵称">
+          {{ studentDetail.nickname || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="角色">
+          {{ studentDetail.role || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="studentDetail.status === 'enabled' ? 'success' : 'danger'">
+            {{ studentDetail.status === 'enabled' ? '启用' : studentDetail.status === 'disabled' ? '禁用' : studentDetail.status || '-' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间" :span="2">
+          {{ formatDateTime(studentDetail.createTime || studentDetail.createdAt) }}
+        </el-descriptions-item>
+        </el-descriptions>
+        <div v-else-if="!studentDetailLoading" style="text-align: center; padding: 20px; color: #909399;">
+          未找到学生信息
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="studentDetailDialogVisible = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 学生知识点正确率弹窗 -->
     <el-dialog
       v-model="knowledgeStatsDialogVisible"
@@ -234,10 +278,9 @@ import {
   addClassStudentEnrollment,
   updateClassStudentEnrollment,
   deleteClassStudentEnrollment,
-  getClassStudentEnrollmentDetail,
   getClassList
 } from '@/api/teacher/teacher_class_manage_api';
-import { getUserList } from '@/api/admin/admin_user_manage_api';
+import { getUserList, getUserBasicInfo } from '@/api/admin/admin_user_manage_api';
 import { getUserKnowledgeAccuracy } from '@/api/teacher/teacher_class_manage_api';
 
 const loading = ref(false);
@@ -245,8 +288,11 @@ const enrollmentList = ref([]);
 const dialogVisible = ref(false);
 const dialogTitle = ref('添加学生');
 const enrollmentFormRef = ref(null);
-const isEdit = ref(false);
-const currentEnrollmentId = ref(null);
+
+// 学生详情弹窗相关
+const studentDetailDialogVisible = ref(false);
+const studentDetail = ref(null);
+const studentDetailLoading = ref(false);
 
 // 班级和学生选择相关
 const classOptions = ref([]);
@@ -530,8 +576,6 @@ const handleCurrentChange = (page) => {
 
 // 添加学生
 const handleAddEnrollment = () => {
-  isEdit.value = false;
-  currentEnrollmentId.value = null;
   dialogTitle.value = '添加学生';
   resetForm();
   // 清空选项，重新加载
@@ -540,36 +584,45 @@ const handleAddEnrollment = () => {
   dialogVisible.value = true;
 };
 
-// 编辑班级学生关系
-const handleEdit = async (row) => {
-  isEdit.value = true;
-  currentEnrollmentId.value = row.id;
-  dialogTitle.value = '编辑班级学生关系';
+// 查看学生详情
+const handleViewDetail = async (row) => {
+  if (!row?.userKey) {
+    ElMessage.warning('未找到学生标识');
+    return;
+  }
+  
+  studentDetailDialogVisible.value = true;
+  studentDetailLoading.value = true;
+  studentDetail.value = null;
   
   try {
-    const response = await getClassStudentEnrollmentDetail(row.id);
-    
+    const response = await getUserBasicInfo(row.userKey);
     if (response.success && response.data) {
-      Object.assign(enrollmentForm, {
-        classKey: response.data.classKey || '',
-        userKey: response.data.userKey || ''
-      });
-      
-      // 加载班级和学生选项，确保下拉框能正确显示
-      classOptions.value = [];
-      studentOptions.value = [];
-      await Promise.all([
-        loadClassOptions(),
-        loadStudentOptions()
-      ]);
-      
-      dialogVisible.value = true;
+      studentDetail.value = response.data;
     } else {
-      ElMessage.error(response.message || '获取班级学生关系详情失败');
+      ElMessage.error(response.message || '获取学生信息失败');
+      // 如果获取详细信息失败，至少显示基本信息
+      studentDetail.value = {
+        userKey: row.userKey,
+        username: '-',
+        nickname: '-',
+        role: '-',
+        status: '-'
+      };
     }
   } catch (error) {
-    console.error('获取班级学生关系详情失败:', error);
-    ElMessage.error('获取班级学生关系详情失败');
+    console.error('获取学生信息失败:', error);
+    ElMessage.error('获取学生信息失败');
+    // 如果获取失败，至少显示基本信息
+    studentDetail.value = {
+      userKey: row.userKey,
+      username: '-',
+      nickname: '-',
+      role: '-',
+      status: '-'
+    };
+  } finally {
+    studentDetailLoading.value = false;
   }
 };
 
@@ -749,29 +802,22 @@ const handleSubmit = async () => {
   await enrollmentFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        let response;
-        if (isEdit.value) {
-          response = await updateClassStudentEnrollment({
-            id: currentEnrollmentId.value,
-            ...enrollmentForm
-          });
-        } else {
-          response = await addClassStudentEnrollment({
-            ...enrollmentForm,
-            status: 1
-          });
-        }
+        // 移除编辑功能，只保留添加功能
+        const response = await addClassStudentEnrollment({
+          ...enrollmentForm,
+          status: 1
+        });
         
         if (response.success) {
-          ElMessage.success(isEdit.value ? '更新成功' : '添加成功');
+          ElMessage.success('添加成功');
           dialogVisible.value = false;
           fetchEnrollmentList();
         } else {
-          ElMessage.error(response.message || (isEdit.value ? '更新失败' : '添加失败'));
+          ElMessage.error(response.message || '添加失败');
         }
       } catch (error) {
         console.error('操作失败:', error);
-        ElMessage.error(isEdit.value ? '更新失败' : '添加失败');
+        ElMessage.error('添加失败');
       }
     }
   });
@@ -815,6 +861,11 @@ onMounted(() => {
   margin-top: 16px;
   max-height: 260px;
   overflow-y: auto;
+}
+
+/* 学生详情描述列表样式 */
+.student-detail-descriptions {
+  margin-bottom: 12px;
 }
 </style>
 

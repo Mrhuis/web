@@ -101,7 +101,10 @@
                 v-for="clazz in classList"
                 :key="clazz.classKey"
                 class="list-row"
-                :class="{ active: clazz.classKey === selectedClassKey }"
+                :class="{ 
+                  active: clazz.classKey === selectedClassKey,
+                  'graded-class': clazz.isAllGraded
+                }"
                 @click="handleClassSelect(clazz)"
               >
                 <div class="row-title">{{ clazz.name || clazz.classKey }}</div>
@@ -130,7 +133,10 @@
                 v-for="student in studentList"
                 :key="student.userKey"
                 class="list-row"
-                :class="{ active: student.userKey === selectedStudentKey }"
+                :class="{ 
+                  active: student.userKey === selectedStudentKey,
+                  'graded-student': student.isGraded
+                }"
                 @click="handleStudentSelect(student)"
               >
                 <div class="row-title">{{ student.nickname || student.userKey }}</div>
@@ -154,7 +160,7 @@
             :disabled="!canCompleteGrading"
             @click="handleCompleteGrading"
           >
-            完成批阅
+            保存/完成批阅
           </el-button>
         </div>
       </div>
@@ -245,6 +251,7 @@ import {
   setStudentAnswerScore
 } from '@/api/teacher/teacher_test_grading_api'
 import { testCenterApi } from '@/api/student/test_center_api'
+import { testCenterResultApi } from '@/api/student/test_center_result_api'
 
 const paperLoading = ref(false)
 const classLoading = ref(false)
@@ -330,7 +337,8 @@ async function fetchPaperList() {
       pageIndex: paperPagination.current,
       pageSize: paperPagination.size,
       paperName: paperSearchKeyword.value || undefined,
-      creatorKey: userKey || '' // 只查询当前教师创建的试卷
+      creatorKey: userKey || '', // 只查询当前教师创建的试卷
+      onlyDistributed: true // 只查询已发布的试卷
     })
     if (response.success) {
       paperList.value = response.data?.records || []
@@ -351,7 +359,38 @@ async function fetchClassList(paperId) {
   try {
     const res = await getGradingClasses(paperId)
     if (res.success) {
-      classList.value = res.data || []
+      const classes = res.data || []
+      // 为每个班级检查是否所有学生都已完成批阅
+      const classPromises = classes.map(async (clazz) => {
+        try {
+          const studentsRes = await getGradingStudents(clazz.classKey)
+          if (studentsRes.success && studentsRes.data) {
+            const students = studentsRes.data
+            // 检查每个学生的批阅状态
+            const studentGradingPromises = students.map(async (student) => {
+              try {
+                const gradedRes = await testCenterResultApi.checkPaperGraded({
+                  userKey: student.userKey,
+                  paperId: paperId
+                })
+                return gradedRes.success && gradedRes.data === '试卷已评分完成'
+              } catch (error) {
+                console.error(`检查学生${student.userKey}批阅状态失败:`, error)
+                return false
+              }
+            })
+            const studentGradingStatuses = await Promise.all(studentGradingPromises)
+            // 如果所有学生都已完成批阅，则班级也已完成批阅
+            const isAllGraded = students.length > 0 && studentGradingStatuses.every(status => status)
+            return { ...clazz, isAllGraded }
+          }
+          return { ...clazz, isAllGraded: false }
+        } catch (error) {
+          console.error(`检查班级${clazz.classKey}批阅状态失败:`, error)
+          return { ...clazz, isAllGraded: false }
+        }
+      })
+      classList.value = await Promise.all(classPromises)
     } else {
       ElMessage.error(res.message || '获取班级失败')
     }
@@ -368,7 +407,25 @@ async function fetchStudentList(classKey) {
   try {
     const res = await getGradingStudents(classKey)
     if (res.success) {
-      studentList.value = res.data || []
+      const students = res.data || []
+      // 为每个学生检查是否已完成批阅
+      const studentPromises = students.map(async (student) => {
+        try {
+          if (!selectedPaperId.value) {
+            return { ...student, isGraded: false }
+          }
+          const gradedRes = await testCenterResultApi.checkPaperGraded({
+            userKey: student.userKey,
+            paperId: selectedPaperId.value
+          })
+          const isGraded = gradedRes.success && gradedRes.data === '试卷已评分完成'
+          return { ...student, isGraded }
+        } catch (error) {
+          console.error(`检查学生${student.userKey}批阅状态失败:`, error)
+          return { ...student, isGraded: false }
+        }
+      })
+      studentList.value = await Promise.all(studentPromises)
     } else {
       ElMessage.error(res.message || '获取学生失败')
     }
@@ -540,6 +597,36 @@ async function handleSaveScore(question, showMessage = true) {
     if (res.success) {
       question.studentAnswer = question.studentAnswer || {}
       question.studentAnswer.score = question.scoreInput
+      
+      // 调用API检查该学生的所有答题记录的score是否都不为空（有数字）
+      try {
+        const gradedRes = await testCenterResultApi.checkPaperGraded({
+          userKey: selectedStudentKey.value,
+          paperId: selectedPaperId.value
+        })
+        const isGraded = gradedRes.success && gradedRes.data === '试卷已评分完成'
+        
+        // 更新当前学生的状态
+        const currentStudent = studentList.value.find(s => s.userKey === selectedStudentKey.value)
+        if (currentStudent) {
+          currentStudent.isGraded = isGraded
+        }
+        
+        // 如果当前学生已完成批阅，检查班级是否所有学生都已完成批阅
+        if (isGraded) {
+          const allStudentsGraded = studentList.value.every(s => s.isGraded)
+          if (allStudentsGraded) {
+            const currentClass = classList.value.find(c => c.classKey === selectedClassKey.value)
+            if (currentClass) {
+              currentClass.isAllGraded = true
+            }
+          }
+        }
+      } catch (error) {
+        console.error('检查批阅状态失败:', error)
+        // 即使检查失败也不影响保存评分
+      }
+      
       if (showMessage) {
         ElMessage.success('评分已保存')
       }
@@ -591,6 +678,14 @@ async function handleCompleteGrading() {
       ? `批阅完成，${unanswered.length} 道题学生暂无作答，默认记为0分`
       : '批阅完成'
   ElMessage.success(message)
+  
+  // 刷新学生和班级列表的状态
+  if (selectedClassKey.value) {
+    await fetchStudentList(selectedClassKey.value)
+  }
+  if (selectedPaperId.value) {
+    await fetchClassList(selectedPaperId.value)
+  }
 }
 </script>
 
@@ -655,6 +750,16 @@ async function handleCompleteGrading() {
 .list-row.active {
   border-color: #3b82f6;
   background: rgba(59, 130, 246, 0.08);
+}
+
+.list-row.graded-student {
+  border-color: #67c23a;
+  background: rgba(103, 194, 58, 0.1);
+}
+
+.list-row.graded-class {
+  border-color: #67c23a;
+  background: rgba(103, 194, 58, 0.1);
 }
 
 .row-title {

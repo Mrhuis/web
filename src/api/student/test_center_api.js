@@ -102,6 +102,20 @@ export const testCenterApi = {
       method: 'get',
       params: { userKey, paperId }
     })
+  },
+
+  /**
+   * 检查试卷是否被回收
+   * @param {string} userKey - 用户标识
+   * @param {number} paperId - 试卷ID
+   * @returns {Promise} 是否已回收（true-已回收，false-未回收）
+   */
+  checkPaperRecycled(userKey, paperId) {
+    return request({
+      url: '/student/test-center-do/check-paper-recycled',
+      method: 'get',
+      params: { userKey, paperId }
+    })
   }
 }
 
